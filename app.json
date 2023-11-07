@@ -1,0 +1,45 @@
+{
+  "expo": {
+    "name": "ADAttendance",
+    "slug": "adeel-senfeng-attendance",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/senfengLogo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF",
+      "userInterfaceStyle": "automatic"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "8f144b9f-2ebd-4494-8730-c76ea80fae4d"
+      }
+    },
+    "owner": "ubaidrehman1840",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8f144b9f-2ebd-4494-8730-c76ea80fae4d"
+    }
+  },
+  "android.config.googleMaps.apiKey": "AIzaSyB6-ksPOA7Bei5gm4_mHTTLOmxZiM9WQ8M",
+  "ios.config.googleMapsApiKey": "AIzaSyB6-ksPOA7Bei5gm4_mHTTLOmxZiM9WQ8M"
+}
