@@ -94,11 +94,9 @@ const CheckLogin = (props) => {
                         await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/user`)
                             .then(async(response) => {
                                 let list = [...response.data]
-                                console.log(list)
                                 setPeople(list)
                                 updatedList = list.filter(item => item.email == getAuth().currentUser.email)
-                                console.log('1')
-                                console.log(updatedList)
+                               
                                 setAuth(updatedList[0])
                                 if (updatedList[0].designation == 'Owner') {
                                     whereTo = 'afterlogin'
@@ -120,7 +118,7 @@ const CheckLogin = (props) => {
                       
 
                     } catch (error) {
-                        console.log('ubaid')
+                      
                         console.log(error)
                         setLoading(false)
                         props.navigation.navigate('login')
@@ -128,7 +126,7 @@ const CheckLogin = (props) => {
                 }
             });
         } catch (error) {
-            console.log('ubaid1')
+          
             console.log(error)
             console.log('no connection')
             setLoading(false)

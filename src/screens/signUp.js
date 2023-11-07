@@ -7,6 +7,7 @@ import styles from "../styles/styles";
 import app from "../config/firebase";
 import { Alert } from "react-native";
 import { Layout, Text, Input, Button, } from '@ui-kitten/components'
+import axios from "axios";
 
 const SignupScreen = (props) => {
 
@@ -58,20 +59,12 @@ const SignupScreen = (props) => {
 
         const db = getFirestore(app)
         let list = []
-        await getDocs(query(collection(db, 'AllowedUsers'), orderBy('id', 'desc')))
-            .then((snapshot) => {
-                snapshot.forEach((docs) => {
-                    list.push(docs.data())
-                })
-            })
+        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/user`)
+        .then((response)=>{
+            list = [...response.data]
+        })
 
-        let id = "1"
         let i = 0
-
-        if (list.length != 0) {
-            id = (parseInt(list[0].id) + 1).toString()
-        }
-
         list.map((item) => {
             if (email == item.email) {
                 createUserWithEmailAndPassword(auth, email, password)

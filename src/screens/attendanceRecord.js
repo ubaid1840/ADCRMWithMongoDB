@@ -29,6 +29,7 @@ const timeStatus = [
 
 const AttendanceRecordScreen = (props) => {
     const data = props.route.params.data
+   
 
     const db = getFirestore(app)
     const [attendanceArray, setAttendanceArray] = useState([])
@@ -82,29 +83,11 @@ const AttendanceRecordScreen = (props) => {
         hideDatePicker();
     };
 
+    useEffect(() => {
+        fetchData()
+    }, [firstDate, secondDate])
 
-    useFocusEffect(
-        useCallback(() => {
-            if (!isFocusedFirstTime) {
-
-                fetchData()
-            }
-
-            // Set the flag to false after the first focus
-            setIsFocusedFirstTime(false);
-
-            // Cleanup function
-            return () => {
-                setDataLoading(true)
-            };
-        }, [isFocusedFirstTime, firstDate, secondDate])
-    );
-
-    // useEffect(() => {
-    //     fetchData()
-    // }, [firstDate, secondDate])
-
-    const fetchData = useCallback(async () => {
+    const fetchData = async () => {
         let list = []
 
         await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/attendance`)
@@ -126,8 +109,8 @@ const AttendanceRecordScreen = (props) => {
                         continue;
                     }
 
-                    const timeInTimestamp = new Date(filteredArray[i + 1].TimeStamp).getHours();
-                    const timeOutTimestamp = new Date(filteredArray[i].TimeStamp).getHours()
+                    const timeInTimestamp = new Date(filteredArray[i].TimeStamp).getHours();
+                    const timeOutTimestamp = new Date(filteredArray[i + 1].TimeStamp).getHours()
                     const hoursForPair = timeOutTimestamp - timeInTimestamp
                     totalWorkingHours += hoursForPair;
                     i++
@@ -139,7 +122,7 @@ const AttendanceRecordScreen = (props) => {
             })
 
 
-    }, [firstDate, secondDate])
+    }
 
     const renderEmptyList = () => {
 
@@ -247,6 +230,8 @@ const AttendanceRecordScreen = (props) => {
                     'location': [0, 0],
                     'note': note,
                     'TimeStamp': result,
+                    'image' : "",
+                    'attendanceBy' : data._id
                 }
                 await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/attendance`, newAttendance)
                     .then((response) => {
