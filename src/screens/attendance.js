@@ -56,7 +56,7 @@ const AttendanceScreen = (props) => {
         <View style={{ flex: 1, width: '100%' }}>
 
             <FlatList style={{ width: '100%', marginVertical: 20, }}
-                data={peopleState.value.data}
+                data={peopleState.value.data.filter(item => item.designation != 'Owner')}
                 refreshing={false}
                 onRefresh={() => {
                     // setAssetArray([])

@@ -71,7 +71,12 @@ const AfterLoginEmployee = (props1) => {
 
   useEffect(() => {
     props1.navigation.addListener('beforeRemove', (e) => {
-      e.preventDefault();
+      if(e.data.action.type == "GO_BACK"){
+        e.preventDefault();
+      }
+      else{
+        props1.navigation.dispatch(e.data.action)
+      }
     });
   }, [props1.navigation]);
 
@@ -258,7 +263,12 @@ const AfterLoginManager = (props1) => {
 
   useEffect(() => {
     props1.navigation.addListener('beforeRemove', (e) => {
-      e.preventDefault();
+      if(e.data.action.type == "GO_BACK"){
+        e.preventDefault();
+      }
+      else{
+        props1.navigation.dispatch(e.data.action)
+      }
     });
   }, [props1.navigation]);
 
@@ -390,7 +400,13 @@ const AfterLogin = (props1) => {
 
   useEffect(() => {
     props1.navigation.addListener('beforeRemove', (e) => {
-      e.preventDefault();
+      if(e.data.action.type == "GO_BACK"){
+        e.preventDefault();
+      }
+      else{
+        props1.navigation.dispatch(e.data.action)
+      }
+     
     });
   }, [props1.navigation]);
 
@@ -589,95 +605,82 @@ export default function App() {
   useEffect(() => {
 
     LogBox.ignoreLogs(['`new NativeEventEmitter()`', 'ExpoFirebaseCore'])
-    async function prepare() {
-      await SplashScreen.preventAutoHideAsync()
-    }
-    prepare()
+    // async function prepare() {
+    //   await SplashScreen.preventAutoHideAsync()
+    // }
+    // prepare()
 
   }, [])
 
   useEffect(() => {
 
     async function requestLocationPermission() {
-      let locationPermission = await Location.requestForegroundPermissionsAsync();
+      await Font.loadAsync(customFonts);
+      // let locationPermission = await Location.requestForegroundPermissionsAsync();
 
-      if (locationPermission.status == 'granted') {
-        setPermission(true)
-      }
-      else {
-        Alert.alert('Error', 'Go to settings and allow location permissions', [
-          {
-            text: 'Close',
-            onPress: () => BackHandler.exitApp()
-          }
-        ])
-      }
+      // if (locationPermission.status == 'granted') {
+      //   setPermission(true)
+      // }
+      // else {
+      //   Alert.alert('Error', 'Go to settings and allow location permissions', [
+      //     {
+      //       text: 'Close',
+      //       onPress: () => BackHandler.exitApp()
+      //     }
+      //   ])
+      // }
 
     }
-
     requestLocationPermission()
 
   }, [])
 
 
-  if (permission == true) {
-    SplashScreen.hideAsync();
-  }
-  else {
-    return undefined
-  }
+  // if(!permission){
+  //   return undefined
+  // }
+  // else {
+  //   SplashScreen.hideAsync()
+  // }
 
-  const loadFonts = async () => {
-    await Font.loadAsync(customFonts);
-    setFontsLoaded(true);
-  };
-
-  if (!fontsLoaded) {
-    loadFonts()
-    console.log('fonts not loaded on app.js')
-    // setFontsLoaded(true)
-    // return
-  }
-  else {
-    return (
-      <>
-        <RootSiblingParent>
-          <ApplicationProvider {...eva} theme={{ ...eva.dark, ...theme }}>
-            <LocationContextProvider>
-              <PeopleContextProvider>
-                <AuthContextProvider>
-                  <TaskContextProvider>
-                    <NavigationContainer >
-                      <AppStack.Navigator initialRouteName='checklogin' screenOptions={{ headerShown: false, gestureEnabled: false }}>
-                        <AppStack.Screen name='afterlogin' component={AfterLogin} />
-                        <AppStack.Screen name='afterloginemployee' component={AfterLoginEmployee} />
-                        <AppStack.Screen name='afterloginmanager' component={AfterLoginManager} />
-                        <AppStack.Screen name='login' component={LoginScreen} />
-                        <AppStack.Screen name='signup' component={SignupScreen} />
-                        <AppStack.Screen name='forgetpassword' component={ForgetPasswordScreen} />
-                        <AppStack.Screen name='dashboard' component={DashboardScreen} />
-                        <AppStack.Screen name='dashboardmanager' component={DashboardManagerScreen} />
-                        <AppStack.Screen name='dashboardemployee' component={DashboardEmployeeScreen} />
-                        <AppStack.Screen name='profile' component={ProfileScreen} />
-                        <AppStack.Screen name='checklogin' component={CheckLogin} />
-                        <AppStack.Screen name='addpeople' component={AddPeopleScreen} />
-                        <AppStack.Screen name='taskdetail' component={TaskDetailScreen} />
-                        <AppStack.Screen name='attendancerecord' component={AttendanceRecordScreen} />
-                        <AppStack.Screen name='taskdetailemployee' component={TaskDetailEmployeeScreen} />
-                        <AppStack.Screen name='singleattendancerecord' component={SingleAttendanceRecordScreen} />
-                        <AppStack.Screen name='taskdetailmanager' component={TaskDetailManagerScreen} />
-                      </AppStack.Navigator>
-                    </NavigationContainer>
-                  </TaskContextProvider>
-                </AuthContextProvider>
-              </PeopleContextProvider>
-            </LocationContextProvider>
-          </ApplicationProvider>
-        </RootSiblingParent>
-        <StatusBar style='light' />
-      </>
-    );
-  }
+  return(
+    <>
+    <RootSiblingParent>
+      <ApplicationProvider {...eva} theme={{ ...eva.dark, ...theme }}>
+        <LocationContextProvider>
+          <PeopleContextProvider>
+            <AuthContextProvider>
+              <TaskContextProvider>
+                <NavigationContainer >
+                  <AppStack.Navigator initialRouteName='checklogin' screenOptions={{ headerShown: false, gestureEnabled: false }}>
+                    <AppStack.Screen name='afterlogin' component={AfterLogin} />
+                    <AppStack.Screen name='afterloginemployee' component={AfterLoginEmployee} />
+                    <AppStack.Screen name='afterloginmanager' component={AfterLoginManager} />
+                    <AppStack.Screen name='login' component={LoginScreen} />
+                    <AppStack.Screen name='signup' component={SignupScreen} />
+                    <AppStack.Screen name='forgetpassword' component={ForgetPasswordScreen} />
+                    <AppStack.Screen name='dashboard' component={DashboardScreen} />
+                    <AppStack.Screen name='dashboardmanager' component={DashboardManagerScreen} />
+                    <AppStack.Screen name='dashboardemployee' component={DashboardEmployeeScreen} />
+                    <AppStack.Screen name='profile' component={ProfileScreen} />
+                    <AppStack.Screen name='checklogin' component={CheckLogin} />
+                    <AppStack.Screen name='addpeople' component={AddPeopleScreen} />
+                    <AppStack.Screen name='taskdetail' component={TaskDetailScreen} />
+                    <AppStack.Screen name='attendancerecord' component={AttendanceRecordScreen} />
+                    <AppStack.Screen name='taskdetailemployee' component={TaskDetailEmployeeScreen} />
+                    <AppStack.Screen name='singleattendancerecord' component={SingleAttendanceRecordScreen} />
+                    <AppStack.Screen name='taskdetailmanager' component={TaskDetailManagerScreen} />
+                  </AppStack.Navigator>
+                </NavigationContainer>
+              </TaskContextProvider>
+            </AuthContextProvider>
+          </PeopleContextProvider>
+        </LocationContextProvider>
+      </ApplicationProvider>
+    </RootSiblingParent>
+    <StatusBar style='light' />
+  </>
+  )
 
 }
 

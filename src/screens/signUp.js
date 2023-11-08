@@ -24,7 +24,12 @@ const SignupScreen = (props) => {
     
   useEffect(() => {
     props.navigation.addListener('beforeRemove', (e) => {
-      e.preventDefault();
+        if(e.data.action.type == "GO_BACK"){
+            e.preventDefault();
+          }
+          else{
+            props.navigation.dispatch(e.data.action)
+          }
     });
   }, [props.navigation]);
 

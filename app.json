@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "ADAttendance",
-    "slug": "adeel-senfeng-attendance",
+    "slug": "adcrm-mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -12,6 +12,15 @@
       "backgroundColor": "#FFFFFF",
       "userInterfaceStyle": "automatic"
     },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
+          "isAndroidBackgroundLocationEnabled": false
+        }
+      ]
+    ],
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -22,14 +31,15 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.octasoft.adcrm"
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "8f144b9f-2ebd-4494-8730-c76ea80fae4d"
+        "projectId": "90371f63-d139-4980-999d-d33afb5cd649"
       }
     },
     "owner": "ubaidrehman1840",

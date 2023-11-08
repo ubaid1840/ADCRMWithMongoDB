@@ -144,7 +144,6 @@ const CheckLogin = (props) => {
     async function checkNetworkStatus() {
         const status = await Network.getNetworkStateAsync();
         if (status.isConnected == false) {
-
             setLoading(false)
             let toast = Toast.show(' Weak or no internet Connection', {
                 duration: Toast.durations.SHORT,
@@ -154,10 +153,34 @@ const CheckLogin = (props) => {
             }, 1000);
         }
         else {
-
+            const res = await  requestLocationPermission()
+            if(res == true)
             checkLogin()
         }
     }
+
+    async function requestLocationPermission() {
+        let locationPermission = await Location.requestForegroundPermissionsAsync();
+
+        return new Promise((resolve, reject)=>{
+            if (locationPermission.status == 'granted') {
+                resolve(true)
+              }
+              else {
+                Alert.alert('Error', 'Go to settings and allow location permissions', [
+                  {
+                    text: 'Close',
+                    onPress: () => {
+                        reject(false)
+                        BackHandler.exitApp()}
+                  }
+                ])
+              }
+        })
+  
+      
+  
+      }
 
     return (
 

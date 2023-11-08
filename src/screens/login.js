@@ -50,7 +50,12 @@ const LoginScreen = (props) => {
 
   useEffect(() => {
     props.navigation.addListener('beforeRemove', (e) => {
-      e.preventDefault();
+      if(e.data.action.type == "GO_BACK"){
+        e.preventDefault();
+      }
+      else{
+        props.navigation.dispatch(e.data.action)
+      }
     });
   }, [props.navigation]);
 
@@ -61,27 +66,38 @@ const LoginScreen = (props) => {
     signInWithEmailAndPassword(auth, email, password)
           .then((userCredential) => {
             const user = userCredential.user;
-
-            const whereTo =[...peopleState.value.data.filter(item => item.email == email)]
-            if(whereTo[0].designation == 'Owner'){
-              setLoading(false)
-              props.navigation.navigate('afterlogin')
+            console.log('2')
+            let whereTo = []
+            whereTo =[...peopleState.value.data.filter(item => item.email == email)]
+            if(whereTo.length != 0){
+              console.log('1')
+              if(whereTo[0].designation == 'Owner'){
+                setEmail("")
+                setPassword("")
+                setLoading(false)
+                console.log('employee owner')
+                props.navigation.navigate('afterlogin')
+              }
+              else if(whereTo[0].designation == 'Manager'){
+                setEmail("")
+                setPassword("")
+                setLoading(false)
+                console.log('employee manager')
+                props.navigation.navigate('afterloginmanager')
+              }
+              else {
+                setEmail("")
+                setPassword("")
+                setLoading(false)
+                console.log('employee login')
+                props.navigation.navigate('afterloginemployee')
+              }
             }
-            else if(whereTo[0].designation == 'Manager'){
-              setLoading(false)
-              props.navigation.navigate('afterloginmanager')
-            }
-            else {
-              setLoading(false)
-              props.navigation.navigate('afterloginemployee')
-            }
-
-           
           })
           .catch((error) => {
             setLoading(false)
            console.log(error)
-            // Alert.alert('Failed', error.code.replace('auth/', ""))
+            Alert.alert('Failed', error.code.replace('auth/', ""))
 
             // ..
           });

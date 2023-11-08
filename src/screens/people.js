@@ -37,7 +37,7 @@ const PeopleScreen = (props) => {
     const height = Dimensions.get('screen').height
     const width = Dimensions.get('screen').width
 
-    const [loading, setLoading] = useState(false)
+    const [loading, setLoading] = useState(true)
     const [searchPeople, setSearchPeople] = useState('')
 
     const [modalVisible, setModalVisible] = useState(false)
@@ -197,7 +197,7 @@ const PeopleScreen = (props) => {
 
        
         const userID = val._id
-        const deleteUserUrl = `https://fragile-hospital-gown-cow.cyclic.app/${userID}`
+        const deleteUserUrl = `https://fragile-hospital-gown-cow.cyclic.app/user/${userID}`
         await axios.delete(deleteUserUrl)
             .then((response) => {
                 console.log('Deleted')
