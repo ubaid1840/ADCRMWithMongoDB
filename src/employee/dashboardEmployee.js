@@ -50,7 +50,7 @@ const DashboardEmployeeScreen = (props) => {
     const fetchData = async () => {
 
         let list = []
-        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/tasks`)
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
         .then((response)=>{
             list = [...response.data]
             list.sort((a, b) => b.TimeStamp - a.TimeStamp)

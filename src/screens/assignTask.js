@@ -1,5 +1,5 @@
 
-import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, TextInput, Dimensions } from "react-native"
+import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, TextInput, Dimensions, Alert } from "react-native"
 import styles from "../styles/styles";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Layout, Text, Button, Input, Modal, Icon, Card, Select, SelectItem, IndexPath } from '@ui-kitten/components';
@@ -86,7 +86,7 @@ const AssignTaskScreen = (props) => {
         //             list.push(docs.data())
         //         })
         //     })
-            await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/tasks`)
+            await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
             .then((response)=>{
                 list = [...response.data]
                 setTaskArray(list)
@@ -101,7 +101,7 @@ const AssignTaskScreen = (props) => {
         if (loading == true) {
             return (
                 <View style={{ marginTop: 50 }}>
-                    <ActivityIndicator color="#57D1D7" size='Large' />
+                    <ActivityIndicator color="#57D1D7" size='large' />
                 </View>
             )
         }
@@ -125,14 +125,14 @@ const AssignTaskScreen = (props) => {
                 'status': 'Pending'   
             }
 
-            await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/tasks`,newTask)
+            await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/tasks`,newTask)
             .then((response)=>{
-                console.log(response.data)
+                //console.log(response.data)
             })
             fetchData()
 
         } catch (error) {
-            console.log(error)
+            Alert.alert('Error', error)
         }
     }
 

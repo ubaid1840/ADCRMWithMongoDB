@@ -98,14 +98,14 @@ const PeopleScreen = (props) => {
 
     const fetchDataMongoDb = async () => {
         let list = []
-        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/user`)
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/user`)
             .then((response) => {
                 list = [...response.data.filter(item => item.designation != 'Owner')]
                 setUser(list)
                 setLoading(false)
             })
-            .catch((err) => {
-                console.log(err)
+            .catch((error) => {
+                Alert.alert('Error', error)
                 setLoading(false)
             })
     }
@@ -114,7 +114,7 @@ const PeopleScreen = (props) => {
         if (loading == true) {
             return (
                 <View style={{ marginTop: 50 }}>
-                    <ActivityIndicator color="#57D1D7" size='Large' />
+                    <ActivityIndicator color="#57D1D7" size='large' />
                 </View>
             )
         }
@@ -145,9 +145,8 @@ const PeopleScreen = (props) => {
                 'company': 'Senfeng',
                 'designation': designation
             }
-            await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/user`, newUser)
+            await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/user`, newUser)
                 .then((response) => {
-                    console.log('Done')
                     Alert.alert('Success', 'User added successfully', [
                         {
                             text: 'Close',
@@ -156,8 +155,8 @@ const PeopleScreen = (props) => {
                     ])
 
                 })
-                .catch((err) => {
-                    console.log(err)
+                .catch((error) => {
+                    Alert.alert('Error', error)
                     setLoading(false)
                 })
         }
@@ -200,13 +199,11 @@ const PeopleScreen = (props) => {
         const deleteUserUrl = `https://fragile-hospital-gown-cow.cyclic.app/user/${userID}`
         await axios.delete(deleteUserUrl)
             .then((response) => {
-                console.log('Deleted')
-                console.log(response.data)
                fetchData()
 
             })
-            .catch((err) => {
-                console.log(err)
+            .catch((error) => {
+                Alert.alert('Error', error)
                 setLoading(false)
             })
     }

@@ -1,4 +1,4 @@
-import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, Dimensions, ActivityIndicator } from "react-native"
+import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, Dimensions, ActivityIndicator, Alert } from "react-native"
 import styles from "../styles/styles";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Layout, Text, Datepicker, Modal, Card, Button, Input, Select, SelectItem } from '@ui-kitten/components';
@@ -90,11 +90,11 @@ const AttendanceRecordScreen = (props) => {
     const fetchData = async () => {
         let list = []
 
-        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/attendance`)
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/attendance`)
             .then((response) => {
                 list = [...response.data]
                 list.sort((a, b) => new Date(a.TimeStamp).getTime() - new Date(b.TimeStamp).getTime())
-                const updatedList = [...list.filter(item => item.attendanceBy == data._id)]
+                const updatedList = [...list.filter(item => item.attendanceBy == props.route.params.data._id)]
                 const filteredArray = [...updatedList.filter(item => isWithinDateRange(item, firstDate, secondDate))]
                 let totalWorkingHours = 0
 
@@ -105,7 +105,7 @@ const AttendanceRecordScreen = (props) => {
                     }
 
                     if (moment(new Date(filteredArray[i].TimeStamp)).format('DD-MM-YYYY') !== moment(new Date(filteredArray[i + 1].TimeStamp)).format('DD-MM-YYYY')) {
-                        alert(`Time Out is not punched on ${moment(new Date(filteredArray[i].TimeStamp)).format('DD-MM-YYYY')} `);
+                       Alert.alert(`Time Out is not punched on ${moment(new Date(filteredArray[i].TimeStamp)).format('DD-MM-YYYY')} `);
                         continue;
                     }
 
@@ -212,7 +212,7 @@ const AttendanceRecordScreen = (props) => {
             if (moment(new Date(item.TimeStamp)).format("DD-MM-YYYY") == moment(new Date(result)).format("DD-MM-YYYY")) {
                 if (item.status == selectedStatus) {
                     setDataLoading(false)
-                    alert(`Same date already exists : ${moment(new Date(item.TimeStamp)).format("DD-MM-YYYY")} ${item.status}`)
+                    Alert.alert(`Same date already exists : ${moment(new Date(item.TimeStamp)).format("DD-MM-YYYY")} ${item.status}`)
                     i++
                     return
                 }
@@ -220,7 +220,6 @@ const AttendanceRecordScreen = (props) => {
         })
 
         if (i != 0) {
-            console.log("date already exists")
             setDataLoading(false)
         }
         else {
@@ -233,15 +232,15 @@ const AttendanceRecordScreen = (props) => {
                     'image' : "",
                     'attendanceBy' : data._id
                 }
-                await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/attendance`, newAttendance)
+                await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/attendance`, newAttendance)
                     .then((response) => {
-                        console.log(response.data)
+                        //console.log(response.data)
                         setAddTimeModalVisible(false)
                         fetchData()
                     })
 
             } catch (error) {
-                alert(error)
+                Alert.alert(error)
                 setDataLoading(false)
                 fetchData()
             }
@@ -308,6 +307,14 @@ const AttendanceRecordScreen = (props) => {
             <FlatList style={{ width: '100%', marginVertical: 20, }}
                 data={[...attendanceArray.filter(item => isWithinDateRange(item, firstDate, secondDate))]}
                 showsVerticalScrollIndicator={false}
+                refreshing={false}
+                onRefresh={() => {
+                    setTotalHours(0)
+                    setAttendanceArray([])
+                    setLoading(true)
+                    setDataLoading(true)
+                    fetchData()
+                }}
                 renderItem={({ item, index }) => {
                     return (
                         <SafeAreaView style={{ width: '100%', alignItems: 'center' }}>

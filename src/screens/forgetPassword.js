@@ -112,7 +112,6 @@ const ForgetPasswordScreen = (props) => {
           <View style={{ flexDirection: 'row', marginTop: 20, alignItems: 'center' }}>
             <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>Already have an account?</Text>
             <TouchableOpacity onPress={() => {
-                console.log('ubaid')
                 setEmail('')
                 props.navigation.goBack()}}>
               <Text style={{ fontFamily: 'inter-bold' }} status="primary"> Login</Text>

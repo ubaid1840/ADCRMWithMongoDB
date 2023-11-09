@@ -1,6 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from "react";
 import { ActivityIndicator, Alert, Text, View } from "react-native"
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import { PeopleContext } from "../store/context/PeopleContext";
 import { Timestamp, collection, getDocs, getFirestore, onSnapshot, orderBy, query } from "firebase/firestore";
 import app from "../config/firebase";
@@ -65,11 +65,9 @@ const MapViewScreen = (props) => {
 
    const fetchData = async()=>{
             let list = []
-           await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/attendance`)
+           await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/attendance`)
                 .then((response) => {
                     list = [...response.data.sort((a,b)=> new Date(b.TimeStamp).getTime() - new Date(a.TimeStamp).getTime())]
-                    console.log(list)
-                    console.log('ubaid')
                     const uniqueNamesArray = [];
                     const encounteredNames = new Set();
     
@@ -89,17 +87,12 @@ const MapViewScreen = (props) => {
 
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status !== 'granted') {
-                Alert('Error', 'Permission to access location was denied');
+                Alert.alert('Error', 'Permission to access location was denied');
                 return;
             }
-
             await Location.watchPositionAsync({ distanceInterval: 50 }, response => {
-
-                // console.log(response.coords.latitude)
-                // console.log(response.coords.longitude)
                 setMyLocation(response)
             })
-            //  setLocation(location);
         })();
     }, []);
 
@@ -348,7 +341,7 @@ const MapViewScreen = (props) => {
                 :
                 <MapView
                     ref={mapRef}
-                    provider='google'
+                    provider={PROVIDER_GOOGLE}
                     style={{ width: '100%', height: '100%' }}
                     showsUserLocation={true}
                     showsMyLocationButton={true}

@@ -71,7 +71,7 @@ const TaskListEmployeeScreen = (props) => {
 
         let list = []
 
-        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/tasks`)
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
             .then((response) => {
                 list = [...response.data]
             })
@@ -96,7 +96,7 @@ const TaskListEmployeeScreen = (props) => {
         if (loading == true) {
             return (
                 <View style={{ marginTop: 50 }}>
-                    <ActivityIndicator color="#57D1D7" size='Large' />
+                    <ActivityIndicator color="#57D1D7" size='large' />
                 </View>
             )
         }
@@ -120,7 +120,7 @@ const TaskListEmployeeScreen = (props) => {
                 'assignedTo': authState.value.data._id,
                 'status': 'Pending'
             }
-            await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/tasks`, newTask)
+            await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/tasks`, newTask)
                 .then((response) => {
                     console.log(response.data)
                 })

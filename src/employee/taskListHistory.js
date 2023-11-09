@@ -79,7 +79,7 @@ const TaskListHistoryEmployeeScreen = (props) => {
 
         let list = []
 
-        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/tasks`)
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
             .then((response) => {
                 list = [...response.data]
             })
@@ -97,7 +97,7 @@ const TaskListHistoryEmployeeScreen = (props) => {
         if (loading == true) {
             return (
                 <View style={{ marginTop: 50 }}>
-                    <ActivityIndicator color="#57D1D7" size='Large' />
+                    <ActivityIndicator color="#57D1D7" size='large' />
                 </View>
             )
         }

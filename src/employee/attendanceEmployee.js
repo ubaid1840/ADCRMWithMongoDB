@@ -141,7 +141,7 @@ const AttendanceEmployeeScreen = (props) => {
 
     const fetchData = async () => {
         setImage(null)
-        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/attendance`)
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/attendance`)
             .then((response) => {
                 let list = [...response.data]
 
@@ -227,7 +227,7 @@ const AttendanceEmployeeScreen = (props) => {
                             'image': downloadURL
                         }
 
-                        await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/attendance`, newAttendance)
+                        await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/attendance`, newAttendance)
                             .then((response) => {
                                 console.log('done')
                             })
@@ -373,7 +373,7 @@ const AttendanceEmployeeScreen = (props) => {
                                 'image': downloadURL
                             }
     
-                            await axios.post(`${process.env.EXPO_PUBLIC_API_URL}/attendance`, newAttendance)
+                            await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/attendance`, newAttendance)
                                 .then((response) => {
                                     console.log('done')
                                 })
@@ -431,7 +431,7 @@ const AttendanceEmployeeScreen = (props) => {
                         <>
                             {imgLoading ?
                                 <View style={{ marginTop: 10 }}>
-                                    <ActivityIndicator color="#57D1D7" size='Large' />
+                                    <ActivityIndicator color="#57D1D7" size='large' />
                                 </View>
                                 : null}
                             {image
@@ -469,7 +469,7 @@ const AttendanceEmployeeScreen = (props) => {
                         <>
                             {imgLoading ?
                                 <View style={{ marginTop: 10 }}>
-                                    <ActivityIndicator color="#57D1D7" size='Large' />
+                                    <ActivityIndicator color="#57D1D7" size='large' />
                                 </View>
                                 : null}
                             {image
@@ -505,7 +505,7 @@ const AttendanceEmployeeScreen = (props) => {
                     <>
                         {imgLoading ?
                             <View style={{ marginTop: 10 }}>
-                                <ActivityIndicator color="#57D1D7" size='Large' />
+                                <ActivityIndicator color="#57D1D7" size='large' />
                             </View>
                             : null}
                         {image
@@ -541,7 +541,7 @@ const AttendanceEmployeeScreen = (props) => {
                 <>
                     {imgLoading ?
                         <View style={{ marginTop: 10 }}>
-                            <ActivityIndicator color="#57D1D7" size='Large' />
+                            <ActivityIndicator color="#57D1D7" size='large' />
                         </View>
                         : null}
                     {image

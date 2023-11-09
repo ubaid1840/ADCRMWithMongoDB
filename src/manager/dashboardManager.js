@@ -49,7 +49,7 @@ const DashboardManagerScreen = (props) => {
         let list = []
 
         try {
-            await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/tasks`)
+            await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
                 .then((response) => {
                     list = [...response.data]
                     setOpenTask([...list.filter(item => item.status != 'Completed')])

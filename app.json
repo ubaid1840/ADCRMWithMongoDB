@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ADAttendance",
+    "name": "ADCRM",
     "slug": "adcrm-mobile-app",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,8 +9,7 @@
     "splash": {
       "image": "./assets/senfengLogo.png",
       "resizeMode": "contain",
-      "backgroundColor": "#FFFFFF",
-      "userInterfaceStyle": "automatic"
+      "backgroundColor": "#FFFFFF"
     },
     "plugins": [
       [
@@ -25,14 +24,24 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.octasoft.adcrm",
+      "runtimeVersion": {
+        "policy": "sdkVersion"
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.octasoft.adcrm"
+      "package": "com.octasoft.adcrm",
+      "permissions": [
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE"
+      ],
+      "runtimeVersion": "1.0.0"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -43,13 +52,8 @@
       }
     },
     "owner": "ubaidrehman1840",
-    "runtimeVersion": {
-      "policy": "appVersion"
-    },
     "updates": {
-      "url": "https://u.expo.dev/8f144b9f-2ebd-4494-8730-c76ea80fae4d"
+      "url": "https://u.expo.dev/90371f63-d139-4980-999d-d33afb5cd649"
     }
-  },
-  "android.config.googleMaps.apiKey": "AIzaSyB6-ksPOA7Bei5gm4_mHTTLOmxZiM9WQ8M",
-  "ios.config.googleMapsApiKey": "AIzaSyB6-ksPOA7Bei5gm4_mHTTLOmxZiM9WQ8M"
+  }
 }

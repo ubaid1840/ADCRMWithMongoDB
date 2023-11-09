@@ -17,11 +17,11 @@ const AttendanceScreen = (props) => {
     const [email, setEmail] = useState('')
     const [isEmailValid, setIsEmailValid] = useState(false)
 
-    const [arrayIndex, setArrayIndex] = useState(0)
+    const [arrayIndex, setArrayIndex] = useState(-1)
 
     const [selectedData, setSelectedData] = useState('')
 
-    const {state : peopleState} = useContext(PeopleContext)
+    const { state: peopleState } = useContext(PeopleContext)
 
     const renderEmptyAsset = () => {
         if (loading == true) {
@@ -45,53 +45,57 @@ const AttendanceScreen = (props) => {
 
     return (
         <Layout style={styles.mainLayout}>
-        <View style={{ width: '90%', alignSelf: 'center', marginTop:10 }}>
-            <Input
-                placeholder='Search people'
-                value={searchPeople}
-                onChangeText={setSearchPeople}
-                size="large"></Input>
-        </View>
+            <View style={{ width: '90%', alignSelf: 'center', marginTop: 10 }}>
+                <Input
+                    placeholder='Search people'
+                    value={searchPeople}
+                    onChangeText={setSearchPeople}
+                    size="large"></Input>
+            </View>
 
-        <View style={{ flex: 1, width: '100%' }}>
+            <View style={{ flex: 1, width: '100%' }}>
 
-            <FlatList style={{ width: '100%', marginVertical: 20, }}
-                data={peopleState.value.data.filter(item => item.designation != 'Owner')}
-                refreshing={false}
-                onRefresh={() => {
-                    // setAssetArray([])
-                    // setSelectedItem(null)
-                    // setItemSelect({})
-                    // setLoading(true)
-                    // fetchData()
-                }}
-                showsVerticalScrollIndicator={false}
-                renderItem={({ item, index }) => {
+                <FlatList style={{ width: '100%', marginVertical: 20, }}
+                    data={peopleState.value.data.filter(item => item.designation != 'Owner')}
+                    refreshing={false}
+                    onRefresh={() => {
+                        // setAssetArray([])
+                        // setSelectedItem(null)
+                        // setItemSelect({})
+                        // setLoading(true)
+                        // fetchData()
+                    }}
+                    showsVerticalScrollIndicator={false}
+                    renderItem={({ item, index }) => {
 
-                    const isActive = index === arrayIndex
+                        const isActive = index === arrayIndex
 
-                    if (searchPeople === "" || item.name.toLowerCase().includes(searchPeople.toLowerCase()))
-                        return (
-                            <SafeAreaView style={{ width: '100%', alignItems: 'center' }}>
-                                <TouchableOpacity style={[{ width: '80%', paddingVertical: 5, borderColor: '#FFFFFF', justifyContent: 'space-between', marginVertical: 10, alignItems: 'center', paddingVertical:10 }, {borderWidth: isActive ? 1 : 0}]}
-                                    onPress={() => {
-                                        setArrayIndex(index)
-                                        setSelectedData(item)
-                                    }} >
-                                    <Text style={{  fontSize: 20 }}>{item.name.toLocaleUpperCase()}</Text>
-                                </TouchableOpacity>
-                            </SafeAreaView>
-                        )
-                }}
-                ListEmptyComponent={() => renderEmptyAsset()} />
-
-                <Button 
-                style={{width:'80%', alignSelf:'center'}}
-                onPress={()=> props.navigation.navigate('attendancerecord', {data: selectedData})}
+                        if (searchPeople === "" || item.name.toLowerCase().includes(searchPeople.toLowerCase()))
+                            return (
+                                <SafeAreaView style={{ width: '100%', alignItems: 'center' }}>
+                                    <TouchableOpacity style={[{ width: '80%', paddingVertical: 5, borderColor: '#FFFFFF', justifyContent: 'space-between', marginVertical: 10, alignItems: 'center', paddingVertical: 10 }, { borderWidth: arrayIndex === index ? 1 : 0 }]}
+                                        onPress={() => {
+                                            setArrayIndex(index)
+                                            setSelectedData(item)
+                                        }} >
+                                        <Text style={{ fontSize: 20 }}>{item.name.toLocaleUpperCase()}</Text>
+                                    </TouchableOpacity>
+                                </SafeAreaView>
+                            )
+                    }}
+                    ListEmptyComponent={() => renderEmptyAsset()} />
+                
+                <Button
+                disabled = {arrayIndex === -1}
+                    style={{ width: '80%', alignSelf: 'center' }}
+                    onPress={() => {
+                        props.navigation.navigate('attendancerecord', { data: selectedData })
+                        setArrayIndex(-1)
+                    }}
                 >Open record</Button>
 
-        </View>
-    </Layout>
+            </View>
+        </Layout>
     )
 }
 

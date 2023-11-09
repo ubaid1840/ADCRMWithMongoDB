@@ -30,7 +30,7 @@ const TaskDetailEmployeeScreen = (props) => {
             'status': val,   
         }
         try {
-            await axios.put(`${process.env.EXPO_PUBLIC_API_URL}/tasks/${id}`, newTask)
+            await axios.put(`https://fragile-hospital-gown-cow.cyclic.app/tasks/${id}`, newTask)
             .then((response)=>{
                 console.log(response.data)
                 fetchData()
@@ -48,7 +48,7 @@ const TaskDetailEmployeeScreen = (props) => {
             'status': 'Awaiting approval',   
         }
         try {
-            await axios.put(`${process.env.EXPO_PUBLIC_API_URL}/tasks/${id}`, newTask)
+            await axios.put(`https://fragile-hospital-gown-cow.cyclic.app/tasks/${id}`, newTask)
             .then((response)=>{
                 console.log(response.data)
                 fetchData()
@@ -63,7 +63,7 @@ const TaskDetailEmployeeScreen = (props) => {
     const fetchData = async () => {
         const id = data._id
         try {
-            await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/tasks/${id}`)
+            await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks/${id}`)
             .then((response) => {
                 setData(response.data)
                 setLoading(false)

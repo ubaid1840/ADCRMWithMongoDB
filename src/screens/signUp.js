@@ -64,7 +64,7 @@ const SignupScreen = (props) => {
 
         const db = getFirestore(app)
         let list = []
-        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/user`)
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/user`)
         .then((response)=>{
             list = [...response.data]
         })

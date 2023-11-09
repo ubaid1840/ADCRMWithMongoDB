@@ -1,4 +1,4 @@
-import { View, TouchableOpacity, Image, Platform } from "react-native"
+import { View, TouchableOpacity, Image, Platform, Alert } from "react-native"
 import Constants from "expo-constants";
 import { ApplicationProvider, Layout, Text, Button, Input, Card, useTheme } from '@ui-kitten/components';
 import { useContext, useState } from "react";
@@ -27,14 +27,13 @@ const TaskDetailScreen = (props) => {
             'status': val,   
         }
         try {
-            await axios.put(`${process.env.EXPO_PUBLIC_API_URL}/tasks/${id}`, newTask)
+            await axios.put(`https://fragile-hospital-gown-cow.cyclic.app/tasks/${id}`, newTask)
             .then((response)=>{
-                console.log(response.data)
                 fetchData()
             })
 
         } catch (error) {
-            console.log(error)
+            Alert.alert('Error', error)
             setLoading(false)
         }
     }
@@ -42,13 +41,13 @@ const TaskDetailScreen = (props) => {
     const fetchData = async () => {
         const id = data._id
         try {
-            await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/tasks/${id}`)
+            await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks/${id}`)
             .then((response) => {
                 setData(response.data)
                 setLoading(false)
             })
         } catch (error) {
-            console.log(error)
+            Alert.alert('Error', error)
             setData(props.route.params.data)
             setLoading(false)
         }
@@ -58,8 +57,6 @@ const TaskDetailScreen = (props) => {
         const id = data._id
         const currentDate = new Date();
         currentDate.setDate(currentDate.getDate() + 1);
-        console.log(currentDate)
-        console.log(moment(new Date(currentDate)).format("DD-MMMM-2023"))
        const dayOfWeek = currentDate.getDay()
         if(dayOfWeek == 7){
             currentDate.setDate(currentDate.getDate() + 1); 
@@ -70,14 +67,13 @@ const TaskDetailScreen = (props) => {
                 'status': 'Pending',
                 'TimeStamp' : currentDate
             }
-            await axios.put(`${process.env.EXPO_PUBLIC_API_URL}/tasks/${id}`, updateTask)
+            await axios.put(`https://fragile-hospital-gown-cow.cyclic.app/tasks/${id}`, updateTask)
             .then((response)=>{
-                console.log(response.data)
                 fetchData()
             })
           
         } catch (error) {
-            console.log(error)
+            Alert.alert('Error', error)
             setLoading(false)
         }
     }

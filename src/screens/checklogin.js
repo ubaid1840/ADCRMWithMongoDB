@@ -1,13 +1,9 @@
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useState, useEffect, useRef, useContext } from 'react';
 import app from '../config/firebase';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, ScrollView, Alert, Animated, Image, View, Text, Dimensions } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { Animated, Image, View, Text } from 'react-native';
-import { Dimensions } from 'react-native';
 import Constants from "expo-constants";
-import { collection, doc, getDoc, getDocs, getFirestore } from 'firebase/firestore';
-import { RefreshControl } from 'react-native';
 import * as Network from 'expo-network';
 import Toast from 'react-native-root-toast';
 import { Layout } from '@ui-kitten/components'
@@ -87,11 +83,11 @@ const CheckLogin = (props) => {
                     props.navigation.navigate('login')
                 }
                 if (user) {
-
+                    
                     try {
                         let whereTo = 'afterlogin'
                         let updatedList = []
-                        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/user`)
+                        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/user`)
                             .then(async(response) => {
                                 let list = [...response.data]
                                 setPeople(list)
@@ -118,8 +114,8 @@ const CheckLogin = (props) => {
                       
 
                     } catch (error) {
-                      
-                        console.log(error)
+    
+                        Alert.alert('Error', error)
                         setLoading(false)
                         props.navigation.navigate('login')
                     }
@@ -127,8 +123,7 @@ const CheckLogin = (props) => {
             });
         } catch (error) {
           
-            console.log(error)
-            console.log('no connection')
+            Alert.alert('Error', error)
             setLoading(false)
             let toast = Toast.show(' Weak or no internet Connection', {
                 duration: Toast.durations.LONG,

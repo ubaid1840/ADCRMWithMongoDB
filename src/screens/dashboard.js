@@ -64,7 +64,7 @@ const DashboardScreen = (props) => {
 
     const fetchDataMongoDb = async () => {
         let list = []
-        await axios.get(`${process.env.EXPO_PUBLIC_API_URL}/tasks`)
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
         .then((response)=>{
             list = [...response.data]
             setOpenTask([...list.filter(item => item.status !== 'Completed')])

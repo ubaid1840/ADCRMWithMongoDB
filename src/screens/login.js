@@ -8,6 +8,7 @@ import app from "../config/firebase";
 import { Alert } from "react-native";
 import { Layout, Text, Input, Button, } from '@ui-kitten/components'
 import { PeopleContext } from "../store/context/PeopleContext";
+import axios from "axios";
 
 const LoginScreen = (props) => {
 
@@ -19,7 +20,7 @@ const LoginScreen = (props) => {
   const [isPasswordValid, setIsPasswordValid] = useState(false)
   const [isButtonActive, setIsButtonActive] = useState(false)
 
-  const {state : peopleState} = useContext(PeopleContext)
+  const { state: peopleState, setPeople } = useContext(PeopleContext)
 
   const auth = getAuth(app)
 
@@ -64,35 +65,42 @@ const LoginScreen = (props) => {
     const db = getFirestore(app)
 
     signInWithEmailAndPassword(auth, email, password)
-          .then((userCredential) => {
+          .then(async(userCredential) => {
             const user = userCredential.user;
-            console.log('2')
             let whereTo = []
-            whereTo =[...peopleState.value.data.filter(item => item.email == email)]
-            if(whereTo.length != 0){
-              console.log('1')
-              if(whereTo[0].designation == 'Owner'){
-                setEmail("")
-                setPassword("")
-                setLoading(false)
-                console.log('employee owner')
-                props.navigation.navigate('afterlogin')
+            try {
+              await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/user`)
+              .then((response)=>{
+                const list = [...response.data]
+                setPeople(list)
+                whereTo =[...list.filter(item => item.email == email)]
+              })
+             
+              if(whereTo.length != 0){
+                if(whereTo[0].designation == 'Owner'){
+                  setEmail("")
+                  setPassword("")
+                  setLoading(false)
+                  props.navigation.navigate('afterlogin')
+                }
+                else if(whereTo[0].designation == 'Manager'){
+                  setEmail("")
+                  setPassword("")
+                  setLoading(false)
+                  props.navigation.navigate('afterloginmanager')
+                }
+                else {
+                  setEmail("")
+                  setPassword("")
+                  setLoading(false)
+                  props.navigation.navigate('afterloginemployee')
+                }
               }
-              else if(whereTo[0].designation == 'Manager'){
-                setEmail("")
-                setPassword("")
-                setLoading(false)
-                console.log('employee manager')
-                props.navigation.navigate('afterloginmanager')
-              }
-              else {
-                setEmail("")
-                setPassword("")
-                setLoading(false)
-                console.log('employee login')
-                props.navigation.navigate('afterloginemployee')
-              }
+            } catch (error) {
+              Alert.alert('Error', error)
+              setLoading(false)
             }
+           
           })
           .catch((error) => {
             setLoading(false)

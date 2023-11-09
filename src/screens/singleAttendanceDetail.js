@@ -8,7 +8,7 @@ import moment from 'moment'
 import { doc, getDoc, getFirestore, updateDoc } from "firebase/firestore";
 import { ActivityIndicator } from "react-native";
 import app from "../config/firebase";
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import styles from "../styles/styles";
 
 const options = {
@@ -311,7 +311,7 @@ const SingleAttendanceRecordScreen = (props) => {
                     <Card status='danger' appearance="outline" style={{ flex: 1, width: '95%', marginTop: 30 }}>
                         <MapView
                             ref={mapRef}
-                            provider='google'
+                            provider={PROVIDER_GOOGLE}
                             style={{ width: '100%', height: '100%' }}
                             // showsUserLocation={true}
                             // showsMyLocationButton={true}
