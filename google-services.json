@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "719101108135",
+    "project_id": "adcrm-a0bf3",
+    "storage_bucket": "adcrm-a0bf3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:719101108135:android:a6226747a76ce6267ca082",
+        "android_client_info": {
+          "package_name": "com.octasoft.adcrm"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNbWDIfKtfRdeOC6h3HED4fbW0HQiQoNY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

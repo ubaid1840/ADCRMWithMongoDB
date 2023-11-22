@@ -9,13 +9,15 @@ import app from "../config/firebase";
 import { ActivityIndicator } from "react-native";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import axios from "axios";
+import moment from "moment";
+import { AuthContext } from "../store/context/AuthContext";
 
 
 const sorting = [
     'Completed',
     'Pending',
     'Awaiting approval',
-    'Undefined'
+    'All'
 ]
 
 
@@ -40,9 +42,10 @@ const AssignTaskScreen = (props) => {
     const [taskArray, setTaskArray] = useState([])
     const [userID, setUserID] = useState(0)
 
-    const [selectedSort, setSelectedSort] = useState('Undefined')
+    const [selectedSort, setSelectedSort] = useState('All')
 
     const { state: peopleState, setPeople } = useContext(PeopleContext)
+    const {state : authState} = useContext(AuthContext)
     const [isFocusedFirstTime, setIsFocusedFirstTime] = useState(true);
 
 
@@ -52,17 +55,14 @@ const AssignTaskScreen = (props) => {
 
                 fetchData()
             }
-
-            // Set the flag to false after the first focus
             setIsFocusedFirstTime(false);
 
-            // Cleanup function
             return () => {
-               setTask('')
-               setSelectedPeople('None')
-               setSearchTask('')
-               setTaskArray([])
-               setLoading(true)
+                setTask('')
+                setSelectedPeople('None')
+                setSearchTask('')
+                setTaskArray([])
+                setLoading(true)
             };
         }, [isFocusedFirstTime])
     );
@@ -86,14 +86,17 @@ const AssignTaskScreen = (props) => {
         //             list.push(docs.data())
         //         })
         //     })
-            await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
-            .then((response)=>{
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
+            .then((response) => {
                 list = [...response.data]
+                list.sort((a, b) => {
+                    return parseFloat(new Date(b.TimeStamp).getTime()) - parseFloat(new Date(a.TimeStamp).getTime())
+                })
                 setTaskArray(list)
                 setLoading(false)
             })
-        
-       
+
+
 
     }
 
@@ -122,13 +125,15 @@ const AssignTaskScreen = (props) => {
             const newTask = {
                 'taskName': task,
                 'assignedTo': userID,
-                'status': 'Pending'   
+                'assignedBy' : authState.value.data._id,
+                'status': 'Pending',
+              
             }
 
-            await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/tasks`,newTask)
-            .then((response)=>{
-                //console.log(response.data)
-            })
+            await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/tasks`, newTask)
+                .then((response) => {
+                    //console.log(response.data)
+                })
             fetchData()
 
         } catch (error) {
@@ -181,7 +186,7 @@ const AssignTaskScreen = (props) => {
                 </View> */}
 
                     <FlatList style={{ width: '100%', marginVertical: 5, }}
-                        data={selectedSort == 'Undefined' ? taskArray : taskArray.filter(item => item.status === selectedSort)}
+                        data={selectedSort == 'All' ? taskArray : taskArray.filter(item => item.status === selectedSort)}
                         refreshing={false}
                         onRefresh={() => {
 
@@ -199,11 +204,23 @@ const AssignTaskScreen = (props) => {
                             if (searchTask === "" || item.taskName.toLowerCase().includes(searchTask.toLowerCase()))
                                 return (
                                     <SafeAreaView key={index} style={{ width: '100%', alignItems: 'center' }}>
-                                        <TouchableOpacity style={[{ width: '100%', paddingHorizontal: 20, paddingVertical: 20, borderColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 2, backgroundColor: '#151A3060' }]}
+                                        <TouchableOpacity style={[{ width: '100%', paddingHorizontal: 20, paddingVertical: 20, borderColor: '#FFFFFF', marginVertical: 2, backgroundColor: '#151A3060' }]}
                                             onPress={() => props.navigation.navigate('taskdetail', { data: item })}>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+                                                <Text style={{ color: '#FFFFFF', fontSize: 13, maxWidth: '65%', fontFamily: 'inter-regular' }}>{item.taskName}</Text>
+                                                <Text style={{ color: '#FFFFFF', fontSize: 13, fontFamily: 'inter-medium' }}>{item.status}</Text>
+                                            </View>
+                                            {item.TimeStamp
+                                                ?
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                                    <Text style={{ color: '#B3B3B3', fontSize: 10, fontFamily: 'inter-regular', marginTop: 3 }}>{moment(new Date(item.TimeStamp)).format('hh:mm A')}</Text>
+                                                    <Text style={{ color: '#B3B3B3', fontSize: 10, fontFamily: 'inter-regular', marginTop: 3 }}>{moment(new Date(item.TimeStamp)).format('DD-MMM-YYYY')}</Text>
+                                                </View>
+                                                :
+                                                null}
 
-                                            <Text style={{ color: '#FFFFFF', fontSize: 13, maxWidth: '65%', fontFamily: 'inter-regular' }}>{item.taskName}</Text>
-                                            <Text style={{ color: '#FFFFFF', fontSize: 13, fontFamily: 'inter-medium' }}>{item.status}</Text>
+
+
                                             {/* <Text status="danger" style={{ color: '#FFFFFF', fontSize: 16 }}>Delete</Text>  */}
                                         </TouchableOpacity>
                                     </SafeAreaView>
@@ -243,16 +260,18 @@ const AssignTaskScreen = (props) => {
                                     //   selectedIndex={selectedIndex}
                                     value={selectedPeople}
                                     onSelect={(index) => {
-                                        setUserID(peopleState.value.data[index - 1]._id)
-                                        setSelectedPeople(peopleState.value.data[index - 1].name)
+                                        const filteredPeople = [...peopleState.value.data.filter((item) => item.designation !== 'Owner')];
+                                        const selectedPerson = filteredPeople[index-1];
+                                        setUserID(selectedPerson._id);
+                                        setSelectedPeople(selectedPerson.name);
+                                        
                                     }}
                                 >
-                                    {peopleState.value.data.map((item, index) => {
-                                        if(item.designation != 'Owner')
-                                        return (
-                                            <SelectItem key={index} title={item.name} />
-                                        )
-                                    })}
+                                    {peopleState.value.data
+                                        .filter((item) => item.designation !== 'Owner')
+                                        .map((person, index) => (
+                                            <SelectItem key={index} title={person.name} />
+                                        ))}
                                 </Select>
                                 <Button onPress={() => {
                                     setModalVisible(false)

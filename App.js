@@ -1,14 +1,13 @@
-import { NavigationContainer, useIsFocused, useNavigation } from '@react-navigation/native';
+import { NavigationContainer, useNavigation} from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DrawerItemList, createDrawerNavigator } from '@react-navigation/drawer';
-import { Image, SafeAreaView, TouchableOpacity, View, BackHandler, Alert, StyleSheet, } from 'react-native';
+import { Image,TouchableOpacity, View, BackHandler, Alert, StyleSheet, } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Font from 'expo-font';
 import Constants from "expo-constants";
 import { RootSiblingParent } from 'react-native-root-siblings';
-import { useContext, useEffect, useRef, useState } from 'react';
+import { createRef, useContext, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location'
-import * as ImagePicker from 'expo-image-picker';
 import * as SplashScreen from 'expo-splash-screen'
 import { LogBox } from 'react-native';
 import { Platform } from 'react-native';
@@ -21,15 +20,11 @@ import LoginScreen from './src/screens/login';
 import SignupScreen from './src/screens/signUp';
 import ForgetPasswordScreen from './src/screens/forgetPassword';
 import ProfileScreen from './src/screens/profile';
-import BeforeLoginScreen from './src/screens/beforeLogin';
 import PropleScreen from './src/screens/people'
-
-import AddPeopleScreen from './src/screens/addPeople'
 
 import { ApplicationProvider, Text, Layout, } from '@ui-kitten/components';
 import * as eva from '@eva-design/eva'
 import { default as theme } from './custom-theme.json'
-import { EvaIconsPack } from "@ui-kitten/eva-icons";
 import TaskDetailScreen from './src/screens/taskDetail';
 
 import AttendanceScreen from './src/screens/attendance';
@@ -39,6 +34,7 @@ import AuthContextProvider, { AuthContext } from './src/store/context/AuthContex
 import PeopleContextProvider from './src/store/context/PeopleContext';
 import TaskContextProvider from './src/store/context/TaskContext'
 import { getAuth, signOut } from 'firebase/auth';
+import {Messaging} from 'firebase/messaging'
 import app from './src/config/firebase';
 
 import DashboardEmployeeScreen from './src/employee/dashboardEmployee'
@@ -48,9 +44,17 @@ import TaskListHistoryEmployeeScreen from './src/employee/taskListHistory';
 import TaskDetailEmployeeScreen from './src/employee/taskDetail';
 import SingleAttendanceRecordScreen from './src/screens/singleAttendanceDetail';
 import AssignTaskManagerScreen from './src/manager/assignTaskManager';
-import TaskDetailManagerScreen from './src/manager/taskDetailManager';
 import TaskListEmployeeScreen from './src/employee/taskList'
 import LocationContextProvider, { LocationContext } from './src/store/context/LocationContext';
+import AttendanceScreenManager from './src/manager/attendanceManager';
+import MyTaskManagerScreen from './src/manager/myTaskManager';
+
+import * as Notifications from 'expo-notifications';
+import TokenContextProvider, { TokenContext } from './src/store/context/TokenContext';
+import { Linking } from 'react-native';
+import { doc, getDoc, getFirestore } from 'firebase/firestore';
+
+
 
 
 const AppStack = createNativeStackNavigator();
@@ -367,6 +371,25 @@ const AfterLoginManager = (props1) => {
           }
         }} />
 
+      <Drawer.Screen name="attendanceManager" component={AttendanceScreenManager}
+        options={{
+          drawerIcon: ({ focused }) => {
+            return (
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/attendance.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+            )
+          },
+          title: ({ focused }) => {
+            return (
+              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Attendance</Text>
+            )
+          },
+          headerTitle: () => {
+            return (
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Attendance</Text>
+            )
+          }
+        }} />
+
       <Drawer.Screen name="assigntaskManager" component={AssignTaskManagerScreen}
         options={{
           drawerIcon: ({ focused }) => {
@@ -389,6 +412,27 @@ const AfterLoginManager = (props1) => {
 
         }} />
 
+      <Drawer.Screen name="mytaskManager" component={MyTaskManagerScreen}
+        options={{
+          drawerIcon: ({ focused }) => {
+            return (
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/inspection_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+            )
+          },
+          title: ({ focused }) => {
+            return (
+
+              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>My Task</Text>
+
+            )
+          },
+          headerTitle: () => {
+            return (
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>My Task</Text>
+            )
+          }
+
+        }} />
 
     </Drawer.Navigator>
   )
@@ -598,11 +642,53 @@ const AfterLogin = (props1) => {
 
 export default function App() {
 
-  // LogBox.ignoreAllLogs();
-
-
   const [permission, setPermission] = useState(false)
-  const [fontsLoaded, setFontsLoaded] = useState(false);
+  const [expoPushToken, setExpoPushToken] = useState('');
+  const [notification, setNotification] = useState(false);
+  const notificationListener = useRef();
+  const responseListener = useRef();
+  const navRef = useRef()
+  const db = getFirestore(app)
+
+  
+ useEffect(()=>{
+  Notifications.setNotificationHandler({
+    handleNotification: async () => ({
+      shouldShowAlert: true,
+      shouldPlaySound: false,
+      shouldSetBadge: true,
+    }),
+  });
+ },[])
+
+  useEffect(() => {
+
+    notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
+      setNotification(notification);
+      console.log(notification)
+    });
+
+    responseListener.current = Notifications.addNotificationResponseReceivedListener(async response => {
+  
+     const docSnap =  await getDoc(doc(db, 'Tasks',response.notification.request.content.data.id))
+     if(docSnap.exists()){
+      const item = {...docSnap.data(), 'id' : docSnap.id}
+      if(response.notification.request.content.data.designation == 'Engineer' || response.notification.request.content.data.designation == 'Sales'){
+        navRef.current.navigate('taskdetailemployee', { data: item })
+      }
+      else {
+        navRef.current.navigate('taskdetail', { data: item })
+      }
+     
+     }
+      
+    });
+
+    return () => {
+      Notifications.removeNotificationSubscription(notificationListener.current);
+      Notifications.removeNotificationSubscription(responseListener.current);
+    };
+  }, []);
 
   useEffect(() => {
 
@@ -617,28 +703,47 @@ export default function App() {
   useEffect(() => {
 
     async function requestLocationPermission() {
-
       await Font.loadAsync(customFonts);
-      let locationPermission = await Location.requestForegroundPermissionsAsync();
-      if (locationPermission.status == 'granted') {
-        setPermission(true)
+
+      const location = await Location.requestForegroundPermissionsAsync()
+      if (location.status == 'granted') {
+        const backgroundStatus = await Location.getBackgroundPermissionsAsync()
+        if(backgroundStatus.status != 'granted'){
+          Alert.alert('Location permission', 'Click open and select Allow all the time', [
+            {
+              text: 'Open',
+              onPress: async () => {
+                const locationPermission = await Location.requestBackgroundPermissionsAsync()
+                if (locationPermission.status == "granted") {
+                  setPermission(true)
+                }
+                else {
+                  Alert.alert('Error', 'Go to settings and select Allow all the time', [
+                    {
+                      text: 'Close',
+                      onPress: () => BackHandler.exitApp()
+                    }
+                  ])
+                }
+              }
+            }
+          ])
+        }
+        else {
+          setPermission(true)
+        }
+      
       }
       else {
-        Alert.alert('Error', 'Go to settings and allow location permissions', [
-          {
-            text: 'Close',
-            onPress: () => BackHandler.exitApp()
-          }
-        ])
+        Alert.alert("Error", "Go to settings and select Allow all the time")
       }
-
     }
     requestLocationPermission()
 
   }, [])
 
 
-  if(!permission){
+  if (!permission) {
     return undefined
   }
   else {
@@ -649,13 +754,15 @@ export default function App() {
     <>
       <RootSiblingParent>
         <ApplicationProvider {...eva} theme={{ ...eva.dark, ...theme }}>
+          <TokenContextProvider>
           <LocationContextProvider>
             <PeopleContextProvider>
               <AuthContextProvider>
                 <TaskContextProvider>
                   <GestureHandlerRootView style={{ flex: 1 }}>
-                    <NavigationContainer >
-                      <AppStack.Navigator initialRouteName='checklogin' screenOptions={{ headerShown: false, gestureEnabled : false }}>
+                    <NavigationContainer 
+                    ref={navRef}>
+                      <AppStack.Navigator initialRouteName='checklogin' screenOptions={{ headerShown: false, gestureEnabled: false }}>
                         <AppStack.Screen name='afterlogin' component={AfterLogin} />
                         <AppStack.Screen name='afterloginemployee' component={AfterLoginEmployee} />
                         <AppStack.Screen name='afterloginmanager' component={AfterLoginManager} />
@@ -667,12 +774,10 @@ export default function App() {
                         <AppStack.Screen name='dashboardemployee' component={DashboardEmployeeScreen} />
                         <AppStack.Screen name='profile' component={ProfileScreen} />
                         <AppStack.Screen name='checklogin' component={CheckLogin} />
-                        <AppStack.Screen name='addpeople' component={AddPeopleScreen} />
                         <AppStack.Screen name='taskdetail' component={TaskDetailScreen} />
                         <AppStack.Screen name='attendancerecord' component={AttendanceRecordScreen} />
                         <AppStack.Screen name='taskdetailemployee' component={TaskDetailEmployeeScreen} />
                         <AppStack.Screen name='singleattendancerecord' component={SingleAttendanceRecordScreen} />
-                        <AppStack.Screen name='taskdetailmanager' component={TaskDetailManagerScreen} />
                       </AppStack.Navigator>
                     </NavigationContainer>
                   </GestureHandlerRootView>
@@ -680,14 +785,16 @@ export default function App() {
               </AuthContextProvider>
             </PeopleContextProvider>
           </LocationContextProvider>
+          </TokenContextProvider>
         </ApplicationProvider>
       </RootSiblingParent>
-
       <StatusBar style='light' />
     </>
   )
 
 }
+
+
 
 const styles = StyleSheet.create({
   container: {

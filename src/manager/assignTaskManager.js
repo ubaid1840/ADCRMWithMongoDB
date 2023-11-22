@@ -1,20 +1,23 @@
 
-import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, TextInput, Dimensions } from "react-native"
+import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, TextInput, Dimensions, Alert } from "react-native"
 import styles from "../styles/styles";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Layout, Text, Button, Input, Modal, Icon, Card, Select, SelectItem, IndexPath } from '@ui-kitten/components';
-import { collection, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, where } from "firebase/firestore";
 import { PeopleContext } from "../store/context/PeopleContext";
 import app from "../config/firebase";
 import { ActivityIndicator } from "react-native";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import axios from "axios";
+import moment from "moment";
+import { AuthContext } from "../store/context/AuthContext";
 
 
 const sorting = [
     'Completed',
     'Pending',
-    'Undefined'
+    'Awaiting approval',
+    'All'
 ]
 
 
@@ -39,10 +42,25 @@ const AssignTaskManagerScreen = (props) => {
     const [taskArray, setTaskArray] = useState([])
     const [userID, setUserID] = useState(0)
 
-    const [selectedSort, setSelectedSort] = useState('Undefined')
+    const [selectedSort, setSelectedSort] = useState('All')
 
     const { state: peopleState, setPeople } = useContext(PeopleContext)
+    const { state: authState } = useContext(AuthContext)
     const [isFocusedFirstTime, setIsFocusedFirstTime] = useState(true);
+
+
+    useEffect(() => {
+        const unsubscribe = props.navigation.addListener('focus', () => {
+            setTask('')
+            setSelectedPeople('None')
+            setSearchTask('')
+            setLoading(true)
+            fetchData()
+        });
+
+        // Return the function to unsubscribe from the event so it gets removed on unmount
+        return unsubscribe;
+    }, [props.navigation])
 
 
     useFocusEffect(
@@ -57,11 +75,11 @@ const AssignTaskManagerScreen = (props) => {
 
             // Cleanup function
             return () => {
-               setTask('')
-               setSelectedPeople('None')
-               setSearchTask('')
-               setTaskArray([])
-               setLoading(true)
+                setTask('')
+                setSelectedPeople('None')
+                setSearchTask('')
+                setTaskArray([])
+                setLoading(true)
             };
         }, [isFocusedFirstTime])
     );
@@ -77,22 +95,18 @@ const AssignTaskManagerScreen = (props) => {
 
     const fetchData = async () => {
 
-       let list = []
+        let list = []
 
-        try {
-            
-            await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
-            .then((response)=>{
-                list = [...response.data]
-                setTaskArray(list)
-                setLoading(false)
-            })
-        } catch (error) {
-            console.log(error)
-            setTaskArray([])
-            setLoading(false)
-        }
+        const snapshot = await getDocs(query(collection(db, 'Tasks'), where('assignedBy', '==', authState.value.data.email)))
 
+        snapshot.forEach((docs) => {
+            list.push({...docs.data(), "id" : docs.id})
+        })
+        list.sort((a, b) => {
+            return parseFloat(new Date(b.TimeStamp).getTime()) - parseFloat(new Date(a.TimeStamp).getTime())
+        })
+        setTaskArray(list)
+        setLoading(false)
     }
 
     const renderEmptyAsset = () => {
@@ -117,19 +131,18 @@ const AssignTaskManagerScreen = (props) => {
     const handleAddTask = async () => {
 
         try {
-            const newTask = {
+
+            await addDoc(collection(db, 'Tasks'), {
                 'taskName': task,
                 'assignedTo': userID,
-                'status': 'Pending'   
-            }
-            await axios.post(`https://fragile-hospital-gown-cow.cyclic.app/tasks`,newTask)
-            .then((response)=>{
-                console.log(response.data)
+                'assignedBy': authState.value.data.email,
+                'status': 'Pending',
+                'TimeStamp' : new Date().getTime()
             })
             fetchData()
 
         } catch (error) {
-            console.log(error)
+            Alert.alert('Error', error)
         }
     }
 
@@ -143,8 +156,8 @@ const AssignTaskManagerScreen = (props) => {
 
     return (
         <>
-            <Layout style={{ flex: 1, alignItems: 'center', paddingVertical: 10, }}>
-                <View style={{ width: '90%', alignSelf: 'center', marginVertical: 20, flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Layout style={styles.mainLayout}>
+                <View style={{ width: '100%', alignSelf: 'center', marginVertical: 20, flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Input
                         style={{ width: '50%' }}
                         value={searchTask}
@@ -178,17 +191,11 @@ const AssignTaskManagerScreen = (props) => {
                 </View> */}
 
                     <FlatList style={{ width: '100%', marginVertical: 5, }}
-                        data={selectedSort == 'Undefined' ? taskArray : taskArray.filter(item => item.status === selectedSort)}
+                        data={selectedSort == 'All' ? taskArray : taskArray.filter(item => item.status === selectedSort)}
                         refreshing={false}
                         onRefresh={() => {
-
                             setLoading(true)
                             fetchData()
-                            // setAssetArray([])
-                            // setSelectedItem(null)
-                            // setItemSelect({})
-                            // setLoading(true)
-                            // fetchData()
                         }}
                         showsVerticalScrollIndicator={false}
                         renderItem={({ item, index }) => {
@@ -196,14 +203,23 @@ const AssignTaskManagerScreen = (props) => {
                             if (searchTask === "" || item.taskName.toLowerCase().includes(searchTask.toLowerCase()))
                                 return (
                                     <SafeAreaView key={index} style={{ width: '100%', alignItems: 'center' }}>
-                                        <TouchableOpacity style={[{ width: '100%', paddingHorizontal: 20, paddingVertical: 20, borderColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 2, backgroundColor: '#151A3060' }]}
-                                            onPress={() => {
-                                                // console.log(item)
-                                                props.navigation.navigate('taskdetailmanager', { data: item })
-                                                }}>
+                                        <TouchableOpacity style={[{ width: '100%', paddingHorizontal: 20, paddingVertical: 20, borderColor: '#FFFFFF', marginVertical: 2, backgroundColor: '#151A3060' }]}
+                                            onPress={() => props.navigation.navigate('taskdetail', { data: item })}>
+                                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', width: '100%' }}>
+                                                <Text style={{ color: '#FFFFFF', fontSize: 13, maxWidth: '65%', fontFamily: 'inter-regular' }}>{item.taskName}</Text>
+                                                <Text style={{ color: '#FFFFFF', fontSize: 13, fontFamily: 'inter-medium' }}>{item.status}</Text>
+                                            </View>
+                                            {item.TimeStamp
+                                                ?
+                                                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                                    <Text style={{ color: '#B3B3B3', fontSize: 10, fontFamily: 'inter-regular', marginTop: 3 }}>{moment(new Date(item.TimeStamp)).format('hh:mm A')}</Text>
+                                                    <Text style={{ color: '#B3B3B3', fontSize: 10, fontFamily: 'inter-regular', marginTop: 3 }}>{moment(new Date(item.TimeStamp)).format('DD-MMM-YYYY')}</Text>
+                                                </View>
+                                                :
+                                                null}
 
-                                            <Text style={{ color: '#FFFFFF', fontSize: 13, maxWidth: '65%', fontFamily: 'inter-regular' }}>{item.taskName}</Text>
-                                            <Text style={{ color: '#FFFFFF', fontSize: 13, fontFamily: 'inter-medium' }}>{item.status}</Text>
+
+
                                             {/* <Text status="danger" style={{ color: '#FFFFFF', fontSize: 16 }}>Delete</Text>  */}
                                         </TouchableOpacity>
                                     </SafeAreaView>
@@ -243,16 +259,26 @@ const AssignTaskManagerScreen = (props) => {
                                     //   selectedIndex={selectedIndex}
                                     value={selectedPeople}
                                     onSelect={(index) => {
-                                        setUserID(peopleState.value.data[index - 1]._id)
-                                        setSelectedPeople(peopleState.value.data[index - 1].name)
+                                        const filteredPeople = [...peopleState.value.data.filter((item) => {
+                                            if (item.designation !== 'Owner' && item.designation !== 'Manager') {
+                                                return item
+                                            }
+                                        })];
+                                        const selectedPerson = filteredPeople[index - 1];
+                                        setUserID(selectedPerson.email);
+                                        setSelectedPeople(selectedPerson.name);
+
                                     }}
                                 >
-                                    {peopleState.value.data.map((item, index) => {
-                                        if(item.designation != 'Owner')
-                                        return (
-                                            <SelectItem key={index} title={item.name} />
-                                        )
-                                    })}
+                                    {peopleState.value.data
+                                        .filter((item) => {
+                                            if (item.designation !== 'Owner' && item.designation !== 'Manager') {
+                                                return item
+                                            }
+                                        })
+                                        .map((person, index) => (
+                                            <SelectItem key={index} title={person.name} />
+                                        ))}
                                 </Select>
                                 <Button onPress={() => {
                                     setModalVisible(false)

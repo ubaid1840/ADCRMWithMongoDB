@@ -322,9 +322,9 @@ const styles = StyleSheet.create({
         fontSize:12
     },
     mainLayout : {
-        flex:1,
-        alignItems:'center',
-        paddingBottom:40
+        flex: 1, 
+        alignItems: 'center', 
+        padding:10
     }
 });
 

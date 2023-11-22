@@ -9,6 +9,7 @@ import { Alert } from "react-native";
 import { Layout, Text, Input, Button, } from '@ui-kitten/components'
 import { PeopleContext } from "../store/context/PeopleContext";
 import axios from "axios";
+import { registerForPushNotificationsAsync } from "../function/tokenFunction";
 
 const LoginScreen = (props) => {
 
@@ -40,21 +41,21 @@ const LoginScreen = (props) => {
 
   }, [email, password])
 
-  useEffect(()=>{
+  useEffect(() => {
     if (isEmailValid == true && isPasswordValid == true) {
       setIsButtonActive(false)
     }
     else {
       setIsButtonActive(true)
     }
-  },[isEmailValid, isPasswordValid])
+  }, [isEmailValid, isPasswordValid])
 
   useEffect(() => {
     props.navigation.addListener('beforeRemove', (e) => {
-      if(e.data.action.type == "GO_BACK"){
+      if (e.data.action.type == "GO_BACK") {
         e.preventDefault();
       }
-      else{
+      else {
         props.navigation.dispatch(e.data.action)
       }
     });
@@ -65,50 +66,59 @@ const LoginScreen = (props) => {
     const db = getFirestore(app)
 
     signInWithEmailAndPassword(auth, email, password)
-          .then(async(userCredential) => {
-            const user = userCredential.user;
-            let whereTo = []
-            try {
-              await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/user`)
-              .then((response)=>{
-                const list = [...response.data]
-                setPeople(list)
-                whereTo =[...list.filter(item => item.email == email)]
+      .then(async (userCredential) => {
+        const user = userCredential.user;
+        let whereTo = []
+        let list = []
+        try {
+          await getDocs(collection(db, 'AllowedUsers'))
+            .then((snapshot) => {
+              snapshot.forEach((docs) => {
+                list.push({ ...docs.data(), 'id': docs.id })
               })
-             
-              if(whereTo.length != 0){
-                if(whereTo[0].designation == 'Owner'){
-                  setEmail("")
-                  setPassword("")
-                  setLoading(false)
-                  props.navigation.navigate('afterlogin')
+              setPeople(list)
+              whereTo = [...list.filter(item => item.email == email)]
+              registerForPushNotificationsAsync().then(async token => {
+                if (token) {
+                  await updateDoc(doc(db, "AllowedUsers", whereTo[0].id), {
+                    'token': token
+                  })
                 }
-                else if(whereTo[0].designation == 'Manager'){
-                  setEmail("")
-                  setPassword("")
-                  setLoading(false)
-                  props.navigation.navigate('afterloginmanager')
-                }
-                else {
-                  setEmail("")
-                  setPassword("")
-                  setLoading(false)
-                  props.navigation.navigate('afterloginemployee')
-                }
-              }
-            } catch (error) {
-              Alert.alert('Error', error)
-              setLoading(false)
-            }
-           
-          })
-          .catch((error) => {
-            setLoading(false)
-           console.log(error)
-            Alert.alert('Failed', error.code.replace('auth/', ""))
+              });
+            })
 
-            // ..
-          });
+          if (whereTo.length != 0) {
+            if (whereTo[0].designation == 'Owner') {
+              setEmail("")
+              setPassword("")
+              setLoading(false)
+              props.navigation.replace('afterlogin')
+            }
+            else if (whereTo[0].designation == 'Manager') {
+              setEmail("")
+              setPassword("")
+              setLoading(false)
+              props.navigation.replace('afterloginmanager')
+            }
+            else {
+              setEmail("")
+              setPassword("")
+              setLoading(false)
+              props.navigation.replace('afterloginemployee')
+            }
+          }
+        } catch (error) {
+          Alert.alert('Error', error)
+          setLoading(false)
+        }
+
+      })
+      .catch((error) => {
+        setLoading(false)
+        Alert.alert('Failed', error.code.replace('auth/', ""))
+
+        // ..
+      });
   }
 
   const CustomActivityIndicator = () => {
@@ -162,13 +172,13 @@ const LoginScreen = (props) => {
             <Button
               disabled={isButtonActive}
               onPress={() => {
-              
-                  setLoading(true)
-                  handleLogin()
-                
+
+                setLoading(true)
+                handleLogin()
+
               }}>Login</Button>
 
-            <TouchableOpacity onPress={()=> props.navigation.navigate('forgetpassword')}>
+            <TouchableOpacity onPress={() => props.navigation.navigate('forgetpassword')}>
               <Text status='primary' style={{ alignSelf: 'flex-end', fontFamily: 'inter-bold', fontSize: 14, marginTop: 5 }}>Forget Password</Text>
             </TouchableOpacity>
           </View>

@@ -1,6 +1,7 @@
 import { initializeApp } from "firebase/app";
 import { initializeAuth, getReactNativePersistence   } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getMessaging } from "firebase/messaging";
 
 
 // Your web app's Firebase configuration
@@ -18,5 +19,6 @@ const app = initializeApp(firebaseConfig);
 initializeAuth(app, {
   persistence: getReactNativePersistence(AsyncStorage),
 });
+
 
 export default app

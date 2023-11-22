@@ -49,7 +49,7 @@ const MapViewScreen = (props) => {
     useFocusEffect(
         useCallback(() => {
             if (!isFocusedFirstTime) {
-
+                console.log('ub')
                 fetchData()
             }
 
@@ -59,6 +59,7 @@ const MapViewScreen = (props) => {
             // Cleanup function
             return () => {
                 setIsFocusedFirstTime(true);
+             
             };
         }, [isFocusedFirstTime])
     );

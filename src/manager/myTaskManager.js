@@ -3,7 +3,7 @@ import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, Text
 import styles from "../styles/styles";
 import { useCallback, useContext, useEffect, useState } from "react";
 import { Layout, Text, Button, Input, Modal, Icon, Card, Select, SelectItem, IndexPath } from '@ui-kitten/components';
-import { addDoc, collection, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc, where } from "firebase/firestore";
 import { PeopleContext } from "../store/context/PeopleContext";
 import app from "../config/firebase";
 import { ActivityIndicator } from "react-native";
@@ -19,7 +19,7 @@ const sorting = [
     'All'
 ]
 
-const TaskListEmployeeScreen = (props) => {
+const MyTaskManagerScreen = (props) => {
 
     const db = getFirestore(app)
 
@@ -45,7 +45,6 @@ const TaskListEmployeeScreen = (props) => {
     const { state: authState } = useContext(AuthContext)
     const [isFocusedFirstTime, setIsFocusedFirstTime] = useState(true);
 
-
     useEffect(() => {
         const unsubscribe = props.navigation.addListener('focus', () => {
             setTask('')
@@ -55,45 +54,21 @@ const TaskListEmployeeScreen = (props) => {
             fetchData()
         });
 
-        // Return the function to unsubscribe from the event so it gets removed on unmount
         return unsubscribe;
     }, [props.navigation])
 
-
-    useFocusEffect(
-        useCallback(() => {
-            if (!isFocusedFirstTime) {
-
-                fetchData()
-            }
-
-            // Set the flag to false after the first focus
-            setIsFocusedFirstTime(false);
-
-            // Cleanup function
-            return () => {
-                setTask('')
-                setSelectedPeople('None')
-                setSearchTask('')
-                setTaskArray([])
-                setLoading(true)
-            };
-        }, [isFocusedFirstTime])
-    );
 
     const fetchData = async () => {
 
         let list = []
 
-        await getDocs(collection(db, 'Tasks'))
-        .then((snapshot)=>{
-            snapshot.forEach((docs)=>{
-                list.push({...docs.data(), "id" : docs.id})
-            })
-        })
-        const list1 = [...list.filter(item => item.assignedTo === authState.value.data.email)]
+        const snapshot = await getDocs(query(collection(db, 'Tasks'), where('assignedTo', '==', authState.value.data.email)))
 
-        const updatedList = list1.filter((item) => {
+        snapshot.forEach((docs) => {
+            list.push({...docs.data(), "id" : docs.id})
+        })
+
+        const updatedList = list.filter((item) => {
             if (item.TimeStamp) {
                 if (moment(new Date(item.TimeStamp)).format('DD-MMMM-YYYY').toString() == moment(new Date()).format("DD-MMMM-YYYY").toString()) {
                     return item
@@ -104,6 +79,7 @@ const TaskListEmployeeScreen = (props) => {
         setTaskList(updatedList)
         setTaskArray(updatedList)
         setLoading(false)
+
     }
 
     const renderEmptyAsset = () => {
@@ -128,12 +104,13 @@ const TaskListEmployeeScreen = (props) => {
     const handleAddTask = async () => {
 
         try {
-            await addDoc(collection(db, 'Tasks'), {
+            await addDoc(collection(db, 'Tasks'),{
                 'taskName': task,
                 'assignedTo': authState.value.data.email,
                 'status': 'Pending',
                 'TimeStamp' : new Date().getTime()
             })
+
             fetchData()
 
         } catch (error) {
@@ -156,23 +133,12 @@ const TaskListEmployeeScreen = (props) => {
 
                 <View style={{ flex: 1, width: '100%' }}>
 
-                    {/* <View style={{flexDirection:'row', width:'100%', justifyContent:'space-between', marginTop:10, paddingHorizontal:20,}}>
-                    <Text  status='info' style={{fontFamily:'inter-semibold', fontSize:20}}>Task</Text>
-                    <Text status='info' style={{fontFamily:'inter-semibold', fontSize:20}}>Status</Text>
-                </View> */}
-
                     <FlatList style={{ width: '100%', marginVertical: 5, }}
                         data={taskArray}
                         refreshing={false}
                         onRefresh={() => {
-
                             setLoading(true)
                             fetchData()
-                            // setAssetArray([])
-                            // setSelectedItem(null)
-                            // setItemSelect({})
-                            // setLoading(true)
-                            // fetchData()
                         }}
                         showsVerticalScrollIndicator={false}
                         renderItem={({ item, index }) => {
@@ -181,7 +147,7 @@ const TaskListEmployeeScreen = (props) => {
                                 return (
                                     <SafeAreaView key={index} style={{ width: '100%', alignItems: 'center' }}>
                                         <TouchableOpacity style={[{ width: '100%', paddingHorizontal: 20, paddingVertical: 20, borderColor: '#FFFFFF', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginVertical: 2, backgroundColor: '#151A3060' }]}
-                                            onPress={() => props.navigation.navigate('taskdetailemployee', { data: item })}>
+                                            onPress={() => props.navigation.navigate('taskdetail', { data: item })}>
 
                                             <Text style={{ color: '#FFFFFF', fontSize: 13, maxWidth: '65%', fontFamily: 'inter-regular' }}>{item.taskName}</Text>
 
@@ -241,4 +207,4 @@ const TaskListEmployeeScreen = (props) => {
 }
 
 
-export default TaskListEmployeeScreen
+export default MyTaskManagerScreen

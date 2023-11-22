@@ -19,14 +19,9 @@ const columns = [
 
 const designationList = [
     'Manager',
-    'Admin',
+    'Engineer',
     'Sales'
 ]
-// 
-
-
-
-
 
 
 const PeopleScreen = (props) => {
@@ -191,9 +186,6 @@ const PeopleScreen = (props) => {
     }
 
     const handleDeletePeople = async (val) => {
-        // await deleteDoc(doc(db, 'AllowedUsers', val.email))
-        // fetchData()
-
        
         const userID = val._id
         const deleteUserUrl = `https://fragile-hospital-gown-cow.cyclic.app/user/${userID}`

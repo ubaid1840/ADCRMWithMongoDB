@@ -27,7 +27,7 @@ const options = {
     hour12: true,
 }
 
-const AttendanceEmployeeScreen = (props) => {
+const AttendanceScreenManager = (props) => {
 
     const db = getFirestore(app)
     const storage = getStorage(app)
@@ -43,17 +43,16 @@ const AttendanceEmployeeScreen = (props) => {
     const [attendaceAllowed, setAttendanceAllowed] = useState(true)
 
     const { state: taskState } = useContext(TaskContext)
-    const { state: locationState } = useContext(LocationContext)
     const [attendanceByLocationAllowed, setAttendanceByLocationAllowed] = useState(true)
 
     const [image, setImage] = useState(null)
     const [imgLoading, setImgLoading] = useState(false)
     const inputRef = useRef()
 
-    
 
     useEffect(() => {
         const unsubscribe = props.navigation.addListener('focus', async () => {
+            setDataLoading(true)
             fetchData()
             let currentLocation = await Location.getCurrentPositionAsync()
             if (currentLocation) {
@@ -79,11 +78,11 @@ const AttendanceEmployeeScreen = (props) => {
                     setAttendanceByLocationAllowed(false)
                 }
             }
-
         });
 
         return unsubscribe;
     }, [props.navigation])
+
 
     const pickImage = async () => {
 
@@ -141,41 +140,50 @@ const AttendanceEmployeeScreen = (props) => {
 
     const fetchData = async () => {
         setImage(null)
-
-        const querySnapshot = await getDocs(query(collection(db, 'Attendance'), where('attendanceBy', '==', authState.value.data.email)))
+        const querySnapshot  = await getDocs(query(collection(db, 'Attendance'), where('attendanceBy', '==', authState.value.data.email)))
         let list = []
 
         querySnapshot.forEach((docs) => {
+     
             list.push(docs.data())
+            console.log(docs.data())
+
         })
-        list.sort((a, b) => new Date(b.TimeStamp).getTime() - new Date(a.TimeStamp).getTime())
-        setAttendanceArray(list)
-        if (list.length != 0) {
-            const timestampDate = new Date(list[0].TimeStamp)
-            const today = new Date()
+      
 
-            const timestampYear = moment(timestampDate).format('YYYY')
-            const timestampMonth = moment(timestampDate).format('MM')
-            const timestampDay = moment(timestampDate).format('DD')
-            const todayYear = moment(today).format('YYYY')
-            const todayMonth = moment(today).format('MM')
-            const todayDay = moment(today).format('DD')
+            list.sort((a, b) => new Date(b.TimeStamp).getTime() - new Date(a.TimeStamp).getTime())
+            // const updatedList = list.filter(item => item.attendanceBy === authState.value.data._id)
+            setAttendanceArray(list)
+            if (list.length != 0) {
+                const timestampDate = new Date(list[0].TimeStamp)
+                const today = new Date()
+                const timestampYear = moment(timestampDate).format('YYYY')
+                const timestampMonth = moment(timestampDate).format('MM')
+                const timestampDay = moment(timestampDate).format('DD')
+                const todayYear = moment(today).format('YYYY')
+                const todayMonth = moment(today).format('MM')
+                const todayDay = moment(today).format('DD')
 
-            if (timestampYear === todayYear && timestampMonth === todayMonth && timestampDay === todayDay) {
-                if (list[0].status == 'Time Out') {
 
-                    setAttendanceAllowed(false)
+                if (timestampYear === todayYear && timestampMonth === todayMonth && timestampDay === todayDay) {
+                    if (list[0].status == 'Time Out') {
+                        setAttendanceAllowed(false)
+                  
+                    }
+                    else {
+                   
+                        setAttendanceAllowed(true)
+                    }
                 }
                 else {
+                
                     setAttendanceAllowed(true)
                 }
             }
+       
+            setDataLoading(false)
+      
 
-            else {
-                setAttendanceAllowed(true)
-            }
-        }
-        setDataLoading(false)
     }
 
 
@@ -208,7 +216,6 @@ const AttendanceEmployeeScreen = (props) => {
                 const downloadURL = await uploadImageToFirebase(image);
                 if (downloadURL) {
                     try {
-
                         await addDoc(collection(db, 'Attendance'), {
                             'attendanceBy': authState.value.data.email,
                             'status': 'Time In',
@@ -217,6 +224,7 @@ const AttendanceEmployeeScreen = (props) => {
                             'image': downloadURL,
                             'TimeStamp' : new Date().getTime()
                         })
+
                     } catch (error) {
                         console.log(error)
                         setDataLoading(false)
@@ -229,6 +237,7 @@ const AttendanceEmployeeScreen = (props) => {
                 }
             }
             else {
+
                 setDataLoading(false)
                 Alert.alert('Error', 'Please try again')
             }
@@ -313,11 +322,7 @@ const AttendanceEmployeeScreen = (props) => {
 
     const handleTimeOut = async () => {
 
-
         let i = 0
-
-        //     console.log(taskState.value.data)
-
         taskState.value.data.map((item) => {
             if (item.status != 'Completed') {
                 console.log(item)
@@ -370,9 +375,6 @@ const AttendanceEmployeeScreen = (props) => {
                 }
             }
         }
-
-
-
     }
 
     const CustomActivityIndicator = () => {
@@ -550,7 +552,7 @@ const AttendanceEmployeeScreen = (props) => {
     }
 
     return (
-        <Layout style={{ flex: 1, alignItems: 'center', paddingVertical: 10, }}>
+        <Layout style={styles.mainLayout}>
 
             <View style={{ flex: 1, width: '100%' }}>
 
@@ -633,4 +635,4 @@ const AttendanceEmployeeScreen = (props) => {
     )
 }
 
-export default AttendanceEmployeeScreen
+export default AttendanceScreenManager

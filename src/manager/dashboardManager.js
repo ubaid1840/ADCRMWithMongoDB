@@ -1,7 +1,7 @@
 import { ActivityIndicator, ScrollView } from "react-native"
 import { View, SafeAreaView } from "react-native"
 import { ApplicationProvider, Layout, Text } from '@ui-kitten/components';
-import { useCallback, useContext, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "../store/context/AuthContext";
 import { PeopleContext } from "../store/context/PeopleContext";
 import { useFocusEffect } from "@react-navigation/native";
@@ -25,38 +25,31 @@ const DashboardManagerScreen = (props) => {
 
     const [isFocusedFirstTime, setIsFocusedFirstTime] = useState(true);
 
+    useEffect(() => {
+        const unsubscribe = props.navigation.addListener('focus', () => {
+            setLoading(true)
+            fetchData()
+        });
 
+        return unsubscribe;
+    }, [props.navigation])
 
-    useFocusEffect(
-        useCallback(() => {
-            if (!isFocusedFirstTime) {
-
-                fetchData()
-            }
-
-            // Set the flag to false after the first focus
-            setIsFocusedFirstTime(false);
-
-            // Cleanup function
-            return () => {
-                setTaskArray([])
-                setLoading(true)
-            };
-        }, [isFocusedFirstTime])
-    );
 
     const fetchData = async () => {
         let list = []
 
         try {
-            await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
-                .then((response) => {
-                    list = [...response.data]
-                    setOpenTask([...list.filter(item => item.status != 'Completed')])
-                    setClosedTask([...list.filter(item => item.status == 'Completed')])
-                    setTaskArray(list)
-                    setLoading(false)
+            await getDocs(collection(db, 'Tasks'))
+            .then((snapshot)=>{
+                let list = []
+                snapshot.forEach((docs)=>{
+                    list.push(docs.data())
                 })
+                setOpenTask([...list.filter(item => item.status != 'Completed')])
+                setClosedTask([...list.filter(item => item.status == 'Completed')])
+                setTaskArray(list)
+                setLoading(false)
+            })
         } catch (error) {
             console.log(error)
             setTaskArray([])

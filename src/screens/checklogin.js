@@ -1,17 +1,20 @@
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import { useState, useEffect, useRef, useContext } from 'react';
 import app from '../config/firebase';
-import { ActivityIndicator, ScrollView, Alert, Animated, Image, View, Text, Dimensions } from 'react-native';
+import { ActivityIndicator, ScrollView, Alert, Animated, Image, View, Text, Dimensions, BackHandler } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import Constants from "expo-constants";
 import * as Network from 'expo-network';
-import Toast from 'react-native-root-toast';
 import { Layout } from '@ui-kitten/components'
 import { AuthContext } from '../store/context/AuthContext';
 import { PeopleContext } from '../store/context/PeopleContext';
-import { LocationContext } from '../store/context/LocationContext';
 import * as Location from 'expo-location'
 import axios from 'axios';
+import { collection, doc, getDoc, getDocs, getFirestore, updateDoc } from 'firebase/firestore';
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device'
+import { TokenContext } from '../store/context/TokenContext';
+import { registerForPushNotificationsAsync } from '../function/tokenFunction';
 
 
 
@@ -25,16 +28,13 @@ const CheckLogin = (props) => {
     const moveText = useRef(new Animated.ValueXY({ x: Dimensions.get('window').width, y: 0 })).current
     const moveLogoText = useRef(new Animated.Value(0)).current
     const [loading, setLoading] = useState(false)
-    // const { state: authState, setAuth, clearAuth } = useContext(AuthContext)
     const [height, setHeight] = useState(Dimensions.get('screen').height)
     const { state: authState, setAuth } = useContext(AuthContext)
     const { state: peopleState, setPeople } = useContext(PeopleContext)
-    const { state: locationState, setLocation } = useContext(LocationContext)
-
+    const {state : tokenState , setToken} = useContext(TokenContext)
 
     useEffect(() => {
         setTimeout(() => {
-
             Animated.timing(startAnimation, {
                 toValue: -Dimensions.get('window').height + 65,
                 useNativeDriver: true
@@ -60,77 +60,84 @@ const CheckLogin = (props) => {
                         setLoading(true)
                         setTimeout(async () => {
                             setLoading(true)
-                            await checkNetworkStatus()
+                            const res = await requestLocationPermission()
+                            if (res == true)
+                                checkLogin()
                         }, 800)
                     })
                 })
-
             })
             Animated.timing(scaleText, {
                 toValue: 0.8,
                 useNativeDriver: true
             })
-
         }, 500)
     }, [])
 
     const checkLogin = () => {
-
         try {
             onAuthStateChanged(auth, async (user) => {
-                if (user == null) {
-                    setLoading(false)
-                    props.navigation.navigate('login')
-                }
                 if (user) {
-                    
                     try {
-                        let whereTo = 'afterlogin'
-                        let updatedList = []
-                        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/user`)
-                            .then(async(response) => {
-                                let list = [...response.data]
+                        const db = getFirestore(app)
+                        await getDocs(collection(db, 'AllowedUsers'))
+                            .then((snapshop) => {
+                                let list = []
+                                snapshop.forEach((docs) => {
+                                    list.push({...docs.data(), 'id' : docs.id})
+                                })
                                 setPeople(list)
-                                updatedList = list.filter(item => item.email == getAuth().currentUser.email)
-                               
+                                const updatedList = list.filter(item => item.email == user.email)
+                                registerForPushNotificationsAsync().then(async token => {
+                                    if(token){
+                                        await updateDoc(doc(db, "AllowedUsers", updatedList[0].id ), {
+                                            'token' : token
+                                        })
+                                    }
+                                    setToken(token)});
                                 setAuth(updatedList[0])
                                 if (updatedList[0].designation == 'Owner') {
-                                    whereTo = 'afterlogin'
+                                    setLoading(false)
+                                    props.navigation.replace('afterlogin')
                                 }
                                 else if (updatedList[0].designation == 'Manager') {
-                                    whereTo = 'afterloginmanager'
+                                    setLoading(false)
+                                    props.navigation.replace('afterloginmanager')
                                 }
                                 else {
-                                    whereTo = 'afterloginemployee'
-                                }
-                                let currentLocation = await Location.getCurrentPositionAsync()
-                                if (currentLocation) {
-                                    setLocation(currentLocation)
                                     setLoading(false)
-                                    props.navigation.navigate(whereTo)
+                                    props.navigation.replace('afterloginemployee')
                                 }
                             })
 
-                      
-
                     } catch (error) {
-    
-                        Alert.alert('Error', error)
+                        console.log(error)
                         setLoading(false)
-                        props.navigation.navigate('login')
+                        Alert.alert('Error', error [
+                            {
+                                text: 'Close',
+                                onPress: () => {
+                                    props.navigation.replace('login')
+                                }
+                            }
+                        ])
+
                     }
                 }
+                else {
+                    setLoading(false)
+                    props.navigation.replace('login')
+                }
             });
+
         } catch (error) {
-          
-            Alert.alert('Error', error)
+            Alert.alert('Error', "Connection error", [
+                {
+                    text: 'Close',
+                    onPress: () => props.navigation.replace('login')
+                }
+            ])
             setLoading(false)
-            let toast = Toast.show(' Weak or no internet Connection', {
-                duration: Toast.durations.LONG,
-            });
-            setTimeout(function hideToast() {
-                Toast.hide(toast);
-            }, 1000);
         }
 
     }
@@ -140,42 +147,38 @@ const CheckLogin = (props) => {
         const status = await Network.getNetworkStateAsync();
         if (status.isConnected == false) {
             setLoading(false)
-            let toast = Toast.show(' Weak or no internet Connection', {
-                duration: Toast.durations.SHORT,
-            });
-            setTimeout(function hideToast() {
-                Toast.hide(toast);
-            }, 1000);
+
         }
         else {
-            const res = await  requestLocationPermission()
-            if(res == true)
-            checkLogin()
+            const res = await requestLocationPermission()
+            if (res == true)
+                checkLogin()
         }
     }
 
     async function requestLocationPermission() {
         let locationPermission = await Location.requestForegroundPermissionsAsync();
 
-        return new Promise((resolve, reject)=>{
+        return new Promise((resolve, reject) => {
             if (locationPermission.status == 'granted') {
                 resolve(true)
-              }
-              else {
+            }
+            else {
                 Alert.alert('Error', 'Go to settings and allow location permissions', [
-                  {
-                    text: 'Close',
-                    onPress: () => {
-                        reject(false)
-                        BackHandler.exitApp()}
-                  }
+                    {
+                        text: 'Close',
+                        onPress: () => {
+                            reject(false)
+                            BackHandler.exitApp()
+                        }
+                    }
                 ])
-              }
+            }
         })
-  
-      
-  
-      }
+
+
+
+    }
 
     return (
 
@@ -200,6 +203,8 @@ const CheckLogin = (props) => {
         </Layout>
     );
 }
+
+
 
 
 export default CheckLogin

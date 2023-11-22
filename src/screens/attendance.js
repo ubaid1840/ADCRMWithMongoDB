@@ -3,6 +3,7 @@ import styles from "../styles/styles";
 import { useContext, useEffect, useState } from "react";
 import { Layout, Text, Button, Input, Modal, Icon, Card, Popover } from '@ui-kitten/components';
 import { PeopleContext } from "../store/context/PeopleContext";
+import axios from "axios";
 
 const AttendanceScreen = (props) => {
 
@@ -21,7 +22,25 @@ const AttendanceScreen = (props) => {
 
     const [selectedData, setSelectedData] = useState('')
 
-    const { state: peopleState } = useContext(PeopleContext)
+    const { state: peopleState, setPeople } = useContext(PeopleContext)
+    
+    useEffect(()=>{
+        fetchDataMongoDb()
+    },[])
+
+    const fetchDataMongoDb = async () => {
+        let list = []
+        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/user`)
+            .then((response) => {
+                list = [...response.data.filter(item => item.designation != 'Owner')]
+                setPeople(list)
+                setLoading(false)
+            })
+            .catch((error) => {
+                Alert.alert('Error', error)
+                setLoading(false)
+            })
+    }
 
     const renderEmptyAsset = () => {
         if (loading == true) {
@@ -64,6 +83,8 @@ const AttendanceScreen = (props) => {
                         // setItemSelect({})
                         // setLoading(true)
                         // fetchData()
+                        setLoading(true)
+                        fetchDataMongoDb()
                     }}
                     showsVerticalScrollIndicator={false}
                     renderItem={({ item, index }) => {

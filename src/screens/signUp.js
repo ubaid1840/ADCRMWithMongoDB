@@ -21,17 +21,17 @@ const SignupScreen = (props) => {
 
     const auth = getAuth(app)
 
-    
-  useEffect(() => {
-    props.navigation.addListener('beforeRemove', (e) => {
-        if(e.data.action.type == "GO_BACK"){
-            e.preventDefault();
-          }
-          else{
-            props.navigation.dispatch(e.data.action)
-          }
-    });
-  }, [props.navigation]);
+
+    useEffect(() => {
+        props.navigation.addListener('beforeRemove', (e) => {
+            if (e.data.action.type == "GO_BACK") {
+                e.preventDefault();
+            }
+            else {
+                props.navigation.dispatch(e.data.action)
+            }
+        });
+    }, [props.navigation]);
 
     useEffect(() => {
 
@@ -50,8 +50,8 @@ const SignupScreen = (props) => {
 
     }, [email, password])
 
-    useEffect(()=>{
-        if(isEmailValid == true && isPasswordValid == true){
+    useEffect(() => {
+        if (isEmailValid == true && isPasswordValid == true) {
             setIsButtonActive(false)
         }
         else {
@@ -64,44 +64,43 @@ const SignupScreen = (props) => {
 
         const db = getFirestore(app)
         let list = []
-        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/user`)
-        .then((response)=>{
-            list = [...response.data]
-        })
+        await getDocs(collection(db, 'AllowedUsers'))
+            .then((snapshot) => {
+                snapshot.forEach((docs) => {
+                    list.push(docs.data())
+                })
+            })
 
         let i = 0
-        list.map((item) => {
-            if (email == item.email) {
-                createUserWithEmailAndPassword(auth, email, password)
-                    .then((userCredential) => {
-                        const user = userCredential.user;
-                        setLoading(false)
-                        Alert.alert('Success', 'Signup succesful', [
-                            {
-                                text: 'Dashboard',
-                                onPress: () => {
-                                    setEmail('')
-                                    setPassword('')
-                                    props.navigation.goBack()
-                                }
+        const fetchEmail = [...list.filter((item) => item.email == email)]
+        if (fetchEmail.length != 0) {
+            createUserWithEmailAndPassword(auth, email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    setLoading(false)
+                    Alert.alert('Success', 'Signup succesful', [
+                        {
+                            text: 'Dashboard',
+                            onPress: () => {
+                                setEmail('')
+                                setPassword('')
+                                props.navigation.goBack()
                             }
-                        ])
-                        // ...
-                    })
-                    .catch((error) => {
-                        setLoading(false)
-                        const errorCode = error.code;
-                        const errorMessage = error.message;
-                        Alert.alert('Failed', errorCode.replace('auth/', ""))
+                        }
+                    ])
+                    // ...
+                })
+                .catch((error) => {
+                    setLoading(false)
+                    const errorCode = error.code;
+                    const errorMessage = error.message;
+                    Alert.alert('Failed', errorCode.replace('auth/', ""))
 
-                        // ..
-                    });
+                    // ..
+                });
+        }
 
-                i++
-            }
-        })
-
-        if (i == 0) {
+        else {
             Alert.alert('Error', 'You are not allowed to signup')
             setLoading(false)
         }
@@ -166,7 +165,7 @@ const SignupScreen = (props) => {
 
                     <View style={{ flexDirection: 'row', marginTop: 10, alignItems: 'center' }}>
                         <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>Already have an account?</Text>
-                        <TouchableOpacity onPress={() =>   props.navigation.goBack()}>
+                        <TouchableOpacity onPress={() => props.navigation.replace('login')}>
                             <Text style={{ fontFamily: 'inter-bold' }} status="primary"> Login</Text>
                         </TouchableOpacity>
                     </View>

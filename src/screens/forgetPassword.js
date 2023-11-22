@@ -24,6 +24,7 @@ const ForgetPasswordScreen = (props) => {
   useEffect(() => {
     
     props.navigation.addListener('beforeRemove', (e) => {
+      console.log(e.data.action.type)
       if(e.data.action.type == "GO_BACK"){
         e.preventDefault();
       }
@@ -112,8 +113,9 @@ const ForgetPasswordScreen = (props) => {
           <View style={{ flexDirection: 'row', marginTop: 20, alignItems: 'center' }}>
             <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>Already have an account?</Text>
             <TouchableOpacity onPress={() => {
+              console.log('ubaid')
                 setEmail('')
-                props.navigation.goBack()}}>
+                props.navigation.replace('login')}}>
               <Text style={{ fontFamily: 'inter-bold' }} status="primary"> Login</Text>
             </TouchableOpacity>
           </View>

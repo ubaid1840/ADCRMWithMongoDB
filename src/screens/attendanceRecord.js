@@ -109,13 +109,19 @@ const AttendanceRecordScreen = (props) => {
                         continue;
                     }
 
-                    const timeInTimestamp = new Date(filteredArray[i].TimeStamp).getHours();
-                    const timeOutTimestamp = new Date(filteredArray[i + 1].TimeStamp).getHours()
+                    const timeInTimestamp = new Date(filteredArray[i].TimeStamp).getTime();
+                    const timeOutTimestamp = new Date(filteredArray[i + 1].TimeStamp).getTime()
                     const hoursForPair = timeOutTimestamp - timeInTimestamp
                     totalWorkingHours += hoursForPair;
                     i++
+
                 }
-                setTotalHours(totalWorkingHours)
+                const totalHours = Math.floor(totalWorkingHours / (1000 * 60 * 60));
+                const totalMinutes = Math.floor((totalWorkingHours % (1000 * 60 * 60)) / (1000 * 60));
+
+              
+
+                setTotalHours(totalHours)
                 setAttendanceArray([...updatedList.sort((a, b) => new Date(b.TimeStamp).getTime() - new Date(a.TimeStamp).getTime())])
                 setLoading(false)
                 setDataLoading(false)
@@ -401,6 +407,7 @@ const AttendanceRecordScreen = (props) => {
                                 mode="time"
                                 onConfirm={handleConfirm}
                                 onCancel={hideDatePicker}
+                                
                             />
 
                             <Select

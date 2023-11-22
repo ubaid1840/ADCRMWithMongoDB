@@ -14,22 +14,19 @@ import axios from "axios";
 const sorting = [
     'Completed',
     'Pending',
-    'Undefined'
+    'All'
 ]
 
 const TaskListHistoryEmployeeScreen = (props) => {
 
     const db = getFirestore(app)
-
     const height = Dimensions.get('screen').height
     const width = Dimensions.get('screen').width
 
     const [loading, setLoading] = useState(true)
     const [dataLoading, setDataLoading] = useState(false)
     const [searchTask, setSearchTask] = useState('')
-
     const [modalVisible, setModalVisible] = useState(false)
-
     const [email, setEmail] = useState('')
     const [isEmailValid, setIsEmailValid] = useState(false)
     const [task, setTask] = useState('')
@@ -37,34 +34,25 @@ const TaskListHistoryEmployeeScreen = (props) => {
     const [taskArray, setTaskArray] = useState([])
     const [userID, setUserID] = useState(0)
 
-    const [selectedSort, setSelectedSort] = useState('Undefined')
+    const [selectedSort, setSelectedSort] = useState('All')
 
     const { state: peopleState, setPeople } = useContext(PeopleContext)
     const [isFocusedFirstTime, setIsFocusedFirstTime] = useState(true);
+    const { state: authState } = useContext(AuthContext)
 
-    const {state : authState} = useContext(AuthContext)
 
+    useEffect(() => {
+        const unsubscribe = props.navigation.addListener('focus', () => {
+            setTask('')
+            setSelectedPeople('None')
+            setSearchTask('')
+            setLoading(true)
+            fetchData()
+        });
 
-    useFocusEffect(
-        useCallback(() => {
-            if (!isFocusedFirstTime) {
-
-                fetchData()
-            }
-
-            // Set the flag to false after the first focus
-            setIsFocusedFirstTime(false);
-
-            // Cleanup function
-            return () => {
-               setTask('')
-               setSelectedPeople('None')
-               setSearchTask('')
-               setTaskArray([])
-               setLoading(true)
-            };
-        }, [isFocusedFirstTime])
-    );
+        // Return the function to unsubscribe from the event so it gets removed on unmount
+        return unsubscribe;
+    }, [props.navigation])
 
     useEffect(() => {
         if (email.includes('@') && email.includes('.com')) {
@@ -78,16 +66,15 @@ const TaskListHistoryEmployeeScreen = (props) => {
     const fetchData = async () => {
 
         let list = []
-
-        await axios.get(`https://fragile-hospital-gown-cow.cyclic.app/tasks`)
-            .then((response) => {
-                list = [...response.data]
+        await getDocs(collection(db, 'Tasks'))
+        .then((snapshot)=>{
+            snapshot.forEach((docs)=>{
+                list.push({...docs.data(), 'id' : docs.id })
             })
+        })
 
-            list.sort((a,b)=> new Date(b.TimeStamp).getTime() - new Date(a.TimeStamp).getTime())
-
-            const updatedList = list.filter(item => item.assignedTo === authState.value.data._id)
-
+        list.sort((a, b) => new Date(b.TimeStamp).getTime() - new Date(a.TimeStamp).getTime())
+        const updatedList = list.filter(item => item.assignedTo === authState.value.data.email)
         setTaskArray(updatedList)
         setLoading(false)
 
@@ -151,8 +138,8 @@ const TaskListHistoryEmployeeScreen = (props) => {
 
     return (
         <>
-            <Layout style={{ flex: 1, alignItems: 'center', paddingVertical: 10, }}>
-                <View style={{ width: '90%', alignSelf: 'center', marginVertical: 20, flexDirection: 'row', justifyContent: 'space-between' }}>
+            <Layout style={styles.mainLayout}>
+                <View style={{ width: '100%', alignSelf: 'center', marginVertical: 20, flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Input
                         style={{ width: '50%' }}
                         value={searchTask}
@@ -186,7 +173,7 @@ const TaskListHistoryEmployeeScreen = (props) => {
                 </View> */}
 
                     <FlatList style={{ width: '100%', marginVertical: 5, }}
-                        data={selectedSort == 'Undefined' ? taskArray : taskArray.filter(item => item.status === selectedSort)}
+                        data={selectedSort == 'All' ? taskArray : taskArray.filter(item => item.status === selectedSort)}
                         refreshing={false}
                         onRefresh={() => {
 

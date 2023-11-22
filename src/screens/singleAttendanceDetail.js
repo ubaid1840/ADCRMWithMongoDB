@@ -10,6 +10,7 @@ import { ActivityIndicator } from "react-native";
 import app from "../config/firebase";
 import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps';
 import styles from "../styles/styles";
+import ImageView from "react-native-image-viewing";
 
 const options = {
     year: 'numeric',
@@ -25,6 +26,8 @@ const SingleAttendanceRecordScreen = (props) => {
     const data = props.route.params.data
     const { state: peopleState } = useContext(PeopleContext)
     const mapRef = useRef()
+    const [openImage, setOpenImage] = useState([])
+    const [openImageVisible, setOpenImageVisble] = useState(false)
 
     const mapstyle = [
         {
@@ -351,12 +354,28 @@ const SingleAttendanceRecordScreen = (props) => {
                 {data.image
                     ?
                     <Card status='info' appearance="outline" style={{ flex: 1, width: '95%', marginTop: 30 }}>
-                        <Image style={{height:'100%', width:'100%'}} resizeMode="contain" source={{uri : data.image}}></Image>
+                        <TouchableOpacity onPress={() => {
+                            const temp = []
+                            temp.push({
+                                uri: data.image
+                            })
+                            setOpenImage(temp)
+                            setOpenImageVisble(true)
+                        }}>
+                            <Image style={{ height: '100%', width: '100%' }} resizeMode="contain" source={{ uri: data.image }}></Image>
+                        </TouchableOpacity>
                     </Card>
                     :
                     null}
             </ScrollView>
 
+            <ImageView
+                images={openImage}
+                imageIndex={0}
+                visible={openImageVisible}
+                onRequestClose={() => setOpenImageVisble(false)}
+
+            />
         </Layout>
     )
 }
