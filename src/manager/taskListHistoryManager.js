@@ -14,13 +14,12 @@ import { TaskContext } from "../store/context/TaskContext";
 import axios from "axios";
 
 const sorting = [
-    'All',
-    'Today',
     'Completed',
     'Pending',
+    'All'
 ]
 
-const MyTaskManagerScreen = (props) => {
+const TaskListHistoryManagerScreen = (props) => {
 
     const db = getFirestore(app)
 
@@ -66,19 +65,23 @@ const MyTaskManagerScreen = (props) => {
         const snapshot = await getDocs(query(collection(db, 'Tasks'), where('assignedTo', '==', authState.value.data.email)))
 
         snapshot.forEach((docs) => {
-            list.push({ ...docs.data(), "id": docs.id })
+            list.push({...docs.data(), "id" : docs.id})
         })
-        list.sort((a, b) => b.TimeStamp - a.TimeStamp)
+
+        
+        list.sort((a, b) => {
+            return parseFloat(new Date(b.TimeStamp).getTime()) - parseFloat(new Date(a.TimeStamp).getTime())
+        })
+
         const updatedList = list.filter((item) => {
             if (item.TimeStamp) {
-                if (moment(new Date(item.TimeStamp)).format('DD-MMMM-YYYY').toString() == moment(new Date()).format("DD-MMMM-YYYY").toString()) {
+                if (moment(new Date(item.TimeStamp)).format('DD-MMMM-YYYY').toString() !== moment(new Date()).format("DD-MMMM-YYYY").toString()) {
                     return item
                 }
             }
         })
 
-        setTaskList(updatedList)
-        setTaskArray(list)
+        setTaskArray(updatedList)
         setLoading(false)
 
     }
@@ -105,11 +108,11 @@ const MyTaskManagerScreen = (props) => {
     const handleAddTask = async () => {
 
         try {
-            await addDoc(collection(db, 'Tasks'), {
+            await addDoc(collection(db, 'Tasks'),{
                 'taskName': task,
                 'assignedTo': authState.value.data.email,
                 'status': 'Pending',
-                'TimeStamp': new Date().getTime()
+                'TimeStamp' : new Date().getTime()
             })
 
             fetchData()
@@ -132,36 +135,10 @@ const MyTaskManagerScreen = (props) => {
         <>
             <Layout style={styles.mainLayout}>
 
-                <View style={{ width: '100%', alignSelf: 'center', marginVertical: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
-                    <Input
-                        style={{ width: '50%' }}
-                        value={searchTask}
-                        onChangeText={setSearchTask}
-                        size='large'
-                        label='Search task'></Input>
-
-
-                    <Select
-                        style={{ width: '40%' }}
-                        size="large"
-                        label='Sort'
-                        //   selectedIndex={selectedIndex}
-                        value={selectedSort}
-                        onSelect={(index) => setSelectedSort(sorting[index - 1])}
-                    >
-                        {sorting.map((item, index) => {
-                            return (
-                                <SelectItem key={index} title={item} />
-                            )
-                        })}
-                    </Select>
-
-                </View>
-
                 <View style={{ flex: 1, width: '100%' }}>
 
                     <FlatList style={{ width: '100%', marginVertical: 5, }}
-                        data={selectedSort == 'All' ? taskArray : selectedSort == 'Today' ? taskArray.filter(item => moment(new Date(item?.TimeStamp)).format("DD-MM-YYYY") == moment(new Date()).format("DD-MM-YYYY")) : taskArray.filter(item => item.status === selectedSort)}
+                        data={taskArray}
                         refreshing={false}
                         onRefresh={() => {
                             setLoading(true)
@@ -185,15 +162,7 @@ const MyTaskManagerScreen = (props) => {
                                 )
                         }}
                         ListEmptyComponent={() => renderEmptyAsset()} />
-                    <View style={{ width: '80%', alignSelf: 'center' }}>
-
-                        <Button appearance='filled' onPress={() => {
-                            setTask('')
-                            setSelectedPeople('None')
-                            setModalVisible(true)
-                        }}>Add Task</Button>
-                    </View>
-
+                  
                 </View>
 
                 <Modal
@@ -221,15 +190,17 @@ const MyTaskManagerScreen = (props) => {
                                     handleAddTask()
                                 }} appearance="filled" status='primary' style={{ marginTop: 40, width: 200, marginBottom: 10 }}>Add</Button>
                             </View>
+
+
                         </Card>
                     </View>
                 </Modal>
             </Layout>
 
-            {loading ? CustomActivityIndicator() : null}
+            {dataLoading ? CustomActivityIndicator() : null}
         </>
     )
 }
 
 
-export default MyTaskManagerScreen
+export default TaskListHistoryManagerScreen

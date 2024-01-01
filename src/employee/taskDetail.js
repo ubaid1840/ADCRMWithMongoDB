@@ -64,7 +64,7 @@ const TaskDetailEmployeeScreen = (props) => {
             })
 
         } catch (error) {
-            console.log(error)
+            //console.log(error)
             setLoading(false)
         }
     }
@@ -78,7 +78,7 @@ const TaskDetailEmployeeScreen = (props) => {
             })
 
         } catch (error) {
-            console.log(error)
+            //console.log(error)
             setLoading(false)
         }
     }
@@ -105,7 +105,7 @@ const TaskDetailEmployeeScreen = (props) => {
                 })
                 
             } catch (error) {
-                console.log(error)
+                //console.log(error)
                 setDataLoading(false)
             }
         }
@@ -129,7 +129,7 @@ const TaskDetailEmployeeScreen = (props) => {
                 'comments': oldComments,
             })
         } catch (error) {
-            console.log(error)
+            //console.log(error)
             setDataLoading(false)
         }
     }
@@ -196,15 +196,15 @@ const TaskDetailEmployeeScreen = (props) => {
 
                     // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    console.log(parseFloat(progress).toFixed(2))
+                    //console.log(parseFloat(progress).toFixed(2))
 
 
                     switch (snapshot.state) {
                         case 'paused':
-                            console.log('Upload is paused');
+                            //console.log('Upload is paused');
                             break;
                         case 'running':
-                            console.log('Upload is running');
+                            //console.log('Upload is running');
                             break;
                     }
                 },
@@ -224,7 +224,7 @@ const TaskDetailEmployeeScreen = (props) => {
                     // Upload completed successfully, now we can get the download URL
                     getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
                         // dbUpdate(downloadURL)
-                        console.log(downloadURL)
+                        //console.log(downloadURL)
                         resolve(downloadURL);
                     }).catch((error) => {
                         reject(null);
@@ -272,7 +272,7 @@ const TaskDetailEmployeeScreen = (props) => {
                 }}>
                     <Image style={{ height: 30, width: 30 }} source={require('../../assets/backarrow_icon.png')} tintColor='#FFFFFF'></Image>
                 </TouchableOpacity>
-                <Button status="danger" onPress={() => {
+                <Button size="small" style={{height:40}} status="danger" onPress={() => {
                     setModalVisible(true)
                 }}>Update</Button>
             </View>
@@ -449,17 +449,7 @@ const TaskDetailEmployeeScreen = (props) => {
                             ? null
                             :
                             <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
-                                {
-                                    data.status != 'Completed'
-                                        ?
-                                        <Button style={{ width: '80%' }} status="danger" onPress={() => {
-                                            setModalVisible(false)
-                                            setLoading(true)
-                                            handleCarryForward()
-                                        }}>Carry forward</Button>
-                                        :
-                                        null
-                                }
+                              
                                 {data.status != 'Completed'
                                     ?
                                     <Button style={{ marginTop: 10, width: '80%' }} onPress={() => {
@@ -488,7 +478,6 @@ const TaskDetailEmployeeScreen = (props) => {
                 imageIndex={0}
                 visible={openImageVisible}
                 onRequestClose={() => setOpenImageVisble(false)}
-              
             />
         </Layout >
     )

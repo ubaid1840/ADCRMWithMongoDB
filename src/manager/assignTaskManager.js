@@ -14,10 +14,10 @@ import { AuthContext } from "../store/context/AuthContext";
 
 
 const sorting = [
+    'All',
+    'Today',
     'Completed',
     'Pending',
-    'Awaiting approval',
-    'All'
 ]
 
 
@@ -38,7 +38,7 @@ const AssignTaskManagerScreen = (props) => {
     const [email, setEmail] = useState('')
     const [isEmailValid, setIsEmailValid] = useState(false)
     const [task, setTask] = useState('')
-    const [selectedPeople, setSelectedPeople] = useState('None')
+    const [selectedPeople, setSelectedPeople] = useState('')
     const [taskArray, setTaskArray] = useState([])
     const [userID, setUserID] = useState(0)
 
@@ -52,7 +52,7 @@ const AssignTaskManagerScreen = (props) => {
     useEffect(() => {
         const unsubscribe = props.navigation.addListener('focus', () => {
             setTask('')
-            setSelectedPeople('None')
+            setSelectedPeople('')
             setSearchTask('')
             setLoading(true)
             fetchData()
@@ -76,7 +76,7 @@ const AssignTaskManagerScreen = (props) => {
             // Cleanup function
             return () => {
                 setTask('')
-                setSelectedPeople('None')
+                setSelectedPeople('')
                 setSearchTask('')
                 setTaskArray([])
                 setLoading(true)
@@ -95,16 +95,21 @@ const AssignTaskManagerScreen = (props) => {
 
     const fetchData = async () => {
 
+        await getDocs(query(collection(db, 'AllowedUsers'), orderBy('name', 'asc')))
+            .then((snapshop) => {
+                let list1 = []
+                snapshop.forEach((docs) => {
+                    list1.push({ ...docs.data(), 'id': docs.id })
+                })
+                setPeople(list1)
+            })
         let list = []
-
         const snapshot = await getDocs(query(collection(db, 'Tasks'), where('assignedBy', '==', authState.value.data.email)))
 
         snapshot.forEach((docs) => {
-            list.push({...docs.data(), "id" : docs.id})
+            list.push({ ...docs.data(), "id": docs.id })
         })
-        list.sort((a, b) => {
-            return parseFloat(new Date(b.TimeStamp).getTime()) - parseFloat(new Date(a.TimeStamp).getTime())
-        })
+      list.sort((a,b)=> b.TimeStamp - a.TimeStamp)
         setTaskArray(list)
         setLoading(false)
     }
@@ -137,7 +142,8 @@ const AssignTaskManagerScreen = (props) => {
                 'assignedTo': userID,
                 'assignedBy': authState.value.data.email,
                 'status': 'Pending',
-                'TimeStamp' : new Date().getTime()
+                'TimeStamp': new Date().getTime(),
+                'type' : 'Office Task'
             })
             fetchData()
 
@@ -157,7 +163,7 @@ const AssignTaskManagerScreen = (props) => {
     return (
         <>
             <Layout style={styles.mainLayout}>
-                <View style={{ width: '100%', alignSelf: 'center', marginVertical: 20, flexDirection: 'row', justifyContent: 'space-between' }}>
+                <View style={{ width: '100%', alignSelf: 'center', marginVertical: 10, flexDirection: 'row', justifyContent: 'space-between' }}>
                     <Input
                         style={{ width: '50%' }}
                         value={searchTask}
@@ -185,13 +191,8 @@ const AssignTaskManagerScreen = (props) => {
 
                 <View style={{ flex: 1, width: '100%' }}>
 
-                    {/* <View style={{flexDirection:'row', width:'100%', justifyContent:'space-between', marginTop:10, paddingHorizontal:20,}}>
-                    <Text  status='info' style={{fontFamily:'inter-semibold', fontSize:20}}>Task</Text>
-                    <Text status='info' style={{fontFamily:'inter-semibold', fontSize:20}}>Status</Text>
-                </View> */}
-
                     <FlatList style={{ width: '100%', marginVertical: 5, }}
-                        data={selectedSort == 'All' ? taskArray : taskArray.filter(item => item.status === selectedSort)}
+                        data={selectedSort == 'All' ? taskArray : selectedSort == 'Today' ? taskArray.filter(item => moment(new Date(item?.TimeStamp)).format("DD-MM-YYYY") == moment(new Date()).format("DD-MM-YYYY")) : taskArray.filter(item => item.status === selectedSort)}
                         refreshing={false}
                         onRefresh={() => {
                             setLoading(true)
@@ -218,9 +219,6 @@ const AssignTaskManagerScreen = (props) => {
                                                 :
                                                 null}
 
-
-
-                                            {/* <Text status="danger" style={{ color: '#FFFFFF', fontSize: 16 }}>Delete</Text>  */}
                                         </TouchableOpacity>
                                     </SafeAreaView>
                                 )
@@ -230,7 +228,7 @@ const AssignTaskManagerScreen = (props) => {
 
                         <Button appearance='filled' onPress={() => {
                             setTask('')
-                            setSelectedPeople('None')
+                            setSelectedPeople('')
                             setModalVisible(true)
                         }}>Add Task</Button>
                     </View>
@@ -280,7 +278,8 @@ const AssignTaskManagerScreen = (props) => {
                                             <SelectItem key={index} title={person.name} />
                                         ))}
                                 </Select>
-                                <Button onPress={() => {
+                                <Button
+                                disabled={!task || !selectedPeople} onPress={() => {
                                     setModalVisible(false)
                                     setTaskArray([])
                                     setLoading(true)

@@ -1,20 +1,22 @@
 
 import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, TextInput, Dimensions } from "react-native"
 import styles from "../styles/styles";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { cloneElement, useCallback, useContext, useEffect, useState } from "react";
 import { Layout, Text, Button, Input, Modal, Icon, Card, Select, SelectItem, IndexPath } from '@ui-kitten/components';
-import { collection, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
+import { addDoc, collection, doc, getDocs, getFirestore, orderBy, query, serverTimestamp, setDoc } from "firebase/firestore";
 import { PeopleContext } from "../store/context/PeopleContext";
 import app from "../config/firebase";
 import { ActivityIndicator } from "react-native";
 import { useFocusEffect, useIsFocused } from "@react-navigation/native";
 import { AuthContext } from "../store/context/AuthContext";
 import axios from "axios";
+import moment from "moment";
 
 const sorting = [
+    'All',
+    'Today',
     'Completed',
     'Pending',
-    'All'
 ]
 
 const TaskListHistoryEmployeeScreen = (props) => {
@@ -67,11 +69,11 @@ const TaskListHistoryEmployeeScreen = (props) => {
 
         let list = []
         await getDocs(collection(db, 'Tasks'))
-        .then((snapshot)=>{
-            snapshot.forEach((docs)=>{
-                list.push({...docs.data(), 'id' : docs.id })
+            .then((snapshot) => {
+                snapshot.forEach((docs) => {
+                    list.push({ ...docs.data(), 'id': docs.id })
+                })
             })
-        })
 
         list.sort((a, b) => new Date(b.TimeStamp).getTime() - new Date(a.TimeStamp).getTime())
         const updatedList = list.filter(item => item.assignedTo === authState.value.data.email)
@@ -102,29 +104,18 @@ const TaskListHistoryEmployeeScreen = (props) => {
     const handleAddTask = async () => {
 
         try {
-            let list = []
-            await getDocs(query(collection(db, 'Tasks'), orderBy('id', 'desc')))
-                .then((snapshot) => {
-                    snapshot.forEach((docs) => {
-                        list.push(docs.data())
-                    })
-                })
-            let id = '1'
-            if (list.length != 0) {
-                id = (parseInt(list[0].id) + 1).toString()
-            }
-
-            setDoc(doc(db, 'Tasks', id), {
-                'id': id.toString(),
+            await addDoc(collection(db, 'Tasks'), {
                 'taskName': task,
-                'assignedTo': userID,
-                'TimeStamp': serverTimestamp(),
-                'status': 'Pending'
+                'assignedTo': authState.value.data.email,
+                'status': 'Pending',
+                'TimeStamp' : new Date().getTime(),
+                'type' : 'Office Task'
             })
             fetchData()
 
         } catch (error) {
             console.log(error)
+            setLoading(false)
         }
     }
 
@@ -172,8 +163,8 @@ const TaskListHistoryEmployeeScreen = (props) => {
                     <Text status='info' style={{fontFamily:'inter-semibold', fontSize:20}}>Status</Text>
                 </View> */}
 
-                    <FlatList style={{ width: '100%', marginVertical: 5, }}
-                        data={selectedSort == 'All' ? taskArray : taskArray.filter(item => item.status === selectedSort)}
+                    <FlatList style={{ flex: 1, width: '100%', marginVertical: 5, }}
+                        data={selectedSort == 'All' ? taskArray : selectedSort == 'Today' ? taskArray.filter(item => moment(new Date(item?.TimeStamp)).format('DD-MMMM-YYYY').toString() == moment(new Date()).format("DD-MMMM-YYYY").toString()) : taskArray.filter(item => item.status === selectedSort)}
                         refreshing={false}
                         onRefresh={() => {
 
@@ -202,7 +193,48 @@ const TaskListHistoryEmployeeScreen = (props) => {
                                 )
                         }}
                         ListEmptyComponent={() => renderEmptyAsset()} />
+                    <View style={{ width: '80%', maxWidth: 300, alignSelf: 'center' }}>
+
+                        <Button appearance='filled' onPress={() => {
+                            setTask('')
+                            setSelectedPeople('None')
+                            setModalVisible(true)
+                        }}>Add Task</Button>
+                    </View>
                 </View>
+
+                <Modal
+                    visible={modalVisible}
+                    animationType="slide"
+                    onBackdropPress={() => setModalVisible(false)}
+                    backdropStyle={{ backgroundColor: '#6B6B6B6A' }}>
+                        <Card style={{ width: Dimensions.get('screen').width-50, }}>
+                            <TouchableOpacity style={{ alignItems: 'flex-end', marginBottom: 20, width: '100%', }}
+                                onPress={() => setModalVisible(false)}>
+                                <Image style={{ width: 20, height: 20, }} source={require('../../assets/cross_icon.png')} tintColor='red'></Image>
+                            </TouchableOpacity>
+                            <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                                <Input
+                                    placeholder="Enter task"
+                                    value={task}
+                                    onChangeText={setTask}
+                                    size="large"
+                                >
+                                </Input>
+
+                                <Button onPress={() => {
+                                    setModalVisible(false)
+                                    setTaskArray([])
+                                    setLoading(true)
+                                    handleAddTask()
+                                }} appearance="filled" status='primary' style={{ marginTop: 40, width: 200, marginBottom: 10 }}>Add</Button>
+                            </View>
+
+
+                        </Card>
+                 
+                </Modal>
+
             </Layout>
 
             {dataLoading ? CustomActivityIndicator() : null}

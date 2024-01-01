@@ -1,12 +1,12 @@
 import { View, ScrollView, TouchableOpacity, FlatList, SafeAreaView, Image, TextInput, Dimensions, ActivityIndicator, Alert } from "react-native"
 import styles from "../styles/styles";
 import Constants from "expo-constants";
-import { useCallback, useContext, useEffect, useState } from "react";
-import { Layout, Text, Button, Input, Modal, Icon, Card, Popover } from '@ui-kitten/components';
+import { memo, useCallback, useContext, useEffect, useState } from "react";
+import { Layout, Text, Button, Input, Modal, Icon, Card, Popover, useTheme, Select, SelectItem } from '@ui-kitten/components';
 import { PeopleContext } from "../store/context/PeopleContext";
 import { AuthContext } from "../store/context/AuthContext";
 import { useFocusEffect } from "@react-navigation/native";
-import { GeoPoint, addDoc, collection, doc, getDocs, getFirestore, onSnapshot, orderBy, query, serverTimestamp, setDoc, where } from "firebase/firestore";
+import { GeoPoint, addDoc, collection, doc, getDocs, getFirestore, onSnapshot, orderBy, query, serverTimestamp, setDoc, updateDoc, where } from "firebase/firestore";
 import app from "../config/firebase";
 import moment from "moment";
 import * as Location from 'expo-location'
@@ -17,6 +17,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRef } from "react";
 import { getStorage, ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import axios from "axios";
+import { DataTable } from "react-native-paper";
+import universalStyles from '../styles/universalStyles'
 
 const options = {
     year: 'numeric',
@@ -27,7 +29,25 @@ const options = {
     hour12: true,
 }
 
+const columns = [
+    "Date",
+    "Time In",
+    "Time Out",
+]
+
+const months = [
+    'All', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'
+]
+
+const currentYear = new Date().getFullYear();
+
+const pastYears = Array.from({ length: 10 }, (_, index) => currentYear - index);
+
+
+
 const AttendanceEmployeeScreen = (props) => {
+
+    const theme = useTheme()
 
     const db = getFirestore(app)
     const storage = getStorage(app)
@@ -40,44 +60,76 @@ const AttendanceEmployeeScreen = (props) => {
     const { state: authState } = useContext(AuthContext)
     const [isFocusedFirstTime, setIsFocusedFirstTime] = useState(true);
     const [modalVisible, setModalVisible] = useState(false)
-    const [attendaceAllowed, setAttendanceAllowed] = useState(true)
+    const [modalVisibleSales, setModalVisibleSales] = useState(false)
+
 
     const { state: taskState } = useContext(TaskContext)
-    const { state: locationState } = useContext(LocationContext)
+    const [attendaceAllowed, setAttendanceAllowed] = useState(true)
     const [attendanceByLocationAllowed, setAttendanceByLocationAllowed] = useState(true)
 
     const [image, setImage] = useState(null)
     const [imgLoading, setImgLoading] = useState(false)
     const inputRef = useRef()
 
-    
+    const [selectedMonth, setSelectedMonth] = useState('All')
+    const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+
+
+
+
+
+    useEffect(() => {
+        // uploadDate()
+    }, [])
 
     useEffect(() => {
         const unsubscribe = props.navigation.addListener('focus', async () => {
+            setDataLoading(true)
+            setAttendanceAllowed(true)
+            setAttendanceByLocationAllowed(true)
             fetchData()
-            let currentLocation = await Location.getCurrentPositionAsync()
-            if (currentLocation) {
-                const coordinates = [
-                    { lat: 31.481186, lon: 74.241216 },
-                    { lat: 31.621299, lon: 74.273994 },
-                    { lat: 31.388195, lon: 74.199890 },
-                    { lat: 31.470412, lon: 74.293418 },
-                    { lat: 31.492994, lon: 74.396301 },
-                ];
-                let i = 0
-                for (const coord of coordinates) {
-                    const distance = calculateDistance(currentLocation.coords.latitude, currentLocation.coords.longitude, coord.lat, coord.lon);
-
-                    if (distance <= 1000) {
-                        i++
-                    }
-                }
-                if (i == 0) {
-                    setAttendanceByLocationAllowed(true)
+            try {
+                let { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    Alert.alert('Error', 'Need location access to mark attendance', [{
+                        text: 'Close',
+                        onPress: () => props.navigation.navigate('dashboardemployee'),
+                        style: 'cancel'
+                    }])
+                    setDataLoading(false)
                 }
                 else {
-                    setAttendanceByLocationAllowed(false)
+                    let currentLocation = await Location.getCurrentPositionAsync({ enableHighAccuracy: true })
+                    if (currentLocation) {
+                        const coordinates = [
+                            { lat: 31.481186, lon: 74.241216 },
+                            { lat: 31.621299, lon: 74.273994 },
+                            { lat: 31.388195, lon: 74.199890 },
+                            { lat: 31.470412, lon: 74.293418 },
+                            { lat: 31.492994, lon: 74.396301 },
+                        ];
+                        let i = 0
+                        for (const coord of coordinates) {
+                            const distance = calculateDistance(currentLocation.coords.latitude, currentLocation.coords.longitude, coord.lat, coord.lon);
+                            if (distance <= 1000) {
+                                i++
+                            }
+                        }
+                        if (i == 0) {
+                            setAttendanceByLocationAllowed(true)
+
+                        }
+                        else {
+                            setAttendanceByLocationAllowed(false)
+                        }
+                    }
                 }
+            } catch (error) {
+                Alert.alert('Error', 'Please turn on your location', [{
+                    text: 'Close',
+                    onPress: () => props.navigation.navigate('dashboardemployee'),
+                    style: 'cancel'
+                }])
             }
 
         });
@@ -88,8 +140,6 @@ const AttendanceEmployeeScreen = (props) => {
     const pickImage = async () => {
 
         const cameraPermission = await ImagePicker.requestCameraPermissionsAsync()
-
-        // console.log(cameraPermission.status == 'granted')
 
         if (cameraPermission.status == 'granted') {
             let result = await ImagePicker.launchCameraAsync({
@@ -106,13 +156,10 @@ const AttendanceEmployeeScreen = (props) => {
             }
 
             if (result.canceled) {
-                console.log('cancelled')
+                //console.log('cancelled')
                 setImgLoading(false)
             }
         }
-
-
-
     };
 
     function calculateDistance(lat1, lon1, lat2, lon2) {
@@ -142,60 +189,30 @@ const AttendanceEmployeeScreen = (props) => {
     const fetchData = async () => {
         setImage(null)
 
-        const querySnapshot = await getDocs(query(collection(db, 'Attendance'), where('attendanceBy', '==', authState.value.data.email)))
+        const querySnapshot = await getDocs(query(collection(db, 'EmployeeAttendance'), where('attendanceBy', '==', authState.value.data.email)))
         let list = []
 
         querySnapshot.forEach((docs) => {
-            list.push(docs.data())
+            list.push({ ...docs.data(), 'id': docs.id })
         })
-        list.sort((a, b) => new Date(b.TimeStamp).getTime() - new Date(a.TimeStamp).getTime())
+
+        list.sort((a, b) => new Date(b.timeIn).getTime() - new Date(a.timeIn).getTime())
         setAttendanceArray(list)
         if (list.length != 0) {
-            const timestampDate = new Date(list[0].TimeStamp)
-            const today = new Date()
-
-            const timestampYear = moment(timestampDate).format('YYYY')
-            const timestampMonth = moment(timestampDate).format('MM')
-            const timestampDay = moment(timestampDate).format('DD')
-            const todayYear = moment(today).format('YYYY')
-            const todayMonth = moment(today).format('MM')
-            const todayDay = moment(today).format('DD')
-
-            if (timestampYear === todayYear && timestampMonth === todayMonth && timestampDay === todayDay) {
-                if (list[0].status == 'Time Out') {
-
+            if (list[0].timeOut) {
+                if (moment(new Date(list[0].timeOut)).format("DD-MM-YYYY").toString() == moment(new Date()).format("DD-MM-YYYY").toString()) {
                     setAttendanceAllowed(false)
                 }
-                else {
-                    setAttendanceAllowed(true)
-                }
-            }
-
-            else {
-                setAttendanceAllowed(true)
             }
         }
         setDataLoading(false)
-    }
-
-
-    const renderEmptyAsset = () => {
-
-        return (
-            <View style={{ height: height / 1.5, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 60 }}>
-                <View style={{ height: 110, width: 110, borderRadius: 55, backgroundColor: '#24303E', justifyContent: 'center', alignItems: 'center' }}>
-                    <Image style={{ height: 90, width: 90 }} source={require('../../assets/profile_icon.png')} tintColor='#5B6D84'></Image>
-                </View>
-                <Text style={{ color: '#FFFFFF', fontSize: 16, marginVertical: 15, fontWeight: '700' }}>No result</Text>
-            </View>
-        )
     }
 
     const handleTimeIn = async () => {
         let { status } = await Location.requestForegroundPermissionsAsync();
 
         if (status !== 'granted') {
-            Alert.alert('Permission not granted', [{
+            Alert.alert('Error', 'Permission not granted', [{
                 text: 'Close',
                 onPress: () => null,
                 style: 'cancel'
@@ -203,22 +220,21 @@ const AttendanceEmployeeScreen = (props) => {
             setDataLoading(false)
 
         } else {
-            let currentLocation = await Location.getCurrentPositionAsync()
+            let currentLocation = await Location.getCurrentPositionAsync({ enableHighAccuracy: true })
             if (currentLocation) {
                 const downloadURL = await uploadImageToFirebase(image);
                 if (downloadURL) {
                     try {
 
-                        await addDoc(collection(db, 'Attendance'), {
+                        await addDoc(collection(db, 'EmployeeAttendance'), {
                             'attendanceBy': authState.value.data.email,
-                            'status': 'Time In',
-                            'location': [currentLocation.coords.latitude, currentLocation.coords.longitude],
-                            'note': note,
-                            'image': downloadURL,
-                            'TimeStamp' : new Date().getTime()
+                            'timeIn': new Date().getTime(),
+                            'locationTimeIn': [currentLocation.coords.latitude, currentLocation.coords.longitude],
+                            'noteTimeIn': note,
+                            'imageTimeIn': downloadURL,
                         })
                     } catch (error) {
-                        console.log(error)
+                        //console.log(error)
                         setDataLoading(false)
                     }
                     fetchData()
@@ -234,6 +250,89 @@ const AttendanceEmployeeScreen = (props) => {
             }
         }
 
+
+    }
+
+    const handleTimeInSales = async (task1, task2, task3, task4, task5) => {
+        let { status } = await Location.requestForegroundPermissionsAsync();
+
+        if (status !== 'granted') {
+            Alert.alert('Error', 'Permission not granted', [{
+                text: 'Close',
+                onPress: () => null,
+                style: 'cancel'
+            }])
+            setDataLoading(false)
+
+        } else {
+            let currentLocation = await Location.getCurrentPositionAsync({ enableHighAccuracy: true })
+            if (currentLocation) {
+                const downloadURL = await uploadImageToFirebase(image);
+                if (downloadURL) {
+                    try {
+                        await addDoc(collection(db, 'EmployeeAttendance'), {
+                            'attendanceBy': authState.value.data.email,
+                            'timeIn': new Date().getTime(),
+                            'locationTimeIn': [currentLocation.coords.latitude, currentLocation.coords.longitude],
+                            'noteTimeIn': note,
+                            'imageTimeIn': downloadURL,
+                        })
+
+                        await addDoc(collection(db, 'Tasks'), {
+                            'taskName': task1,
+                            'assignedTo': authState.value.data.email,
+                            'status': 'Pending',
+                            'TimeStamp': new Date().getTime(),
+                            'type': 'Office Task'
+                        })
+
+                        await addDoc(collection(db, 'Tasks'), {
+                            'taskName': task2,
+                            'assignedTo': authState.value.data.email,
+                            'status': 'Pending',
+                            'TimeStamp': new Date().getTime(),
+                            'type': 'Office Task'
+                        })
+
+                        await addDoc(collection(db, 'Tasks'), {
+                            'taskName': task3,
+                            'assignedTo': authState.value.data.email,
+                            'status': 'Pending',
+                            'TimeStamp': new Date().getTime(),
+                            'type': 'Office Task'
+                        })
+
+                        await addDoc(collection(db, 'Tasks'), {
+                            'taskName': task4,
+                            'assignedTo': authState.value.data.email,
+                            'status': 'Pending',
+                            'TimeStamp': new Date().getTime(),
+                            'type': 'Office Task'
+                        })
+
+                        await addDoc(collection(db, 'Tasks'), {
+                            'taskName': task5,
+                            'assignedTo': authState.value.data.email,
+                            'status': 'Pending',
+                            'TimeStamp': new Date().getTime(),
+                            'type': 'Office Task'
+                        })
+                    } catch (error) {
+                        //console.log(error)
+                        setDataLoading(false)
+                    }
+                    fetchData()
+                }
+                else {
+                    Alert.alert('Error', 'Please try again')
+                    fetchData()
+                }
+            }
+            else {
+                setDataLoading(false)
+                Alert.alert('Error', 'Please try again')
+            }
+        }
 
     }
 
@@ -274,15 +373,15 @@ const AttendanceEmployeeScreen = (props) => {
                     // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
                     const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
 
-                    console.log(parseFloat(progress).toFixed(2))
+                    //console.log(parseFloat(progress).toFixed(2))
 
 
                     switch (snapshot.state) {
                         case 'paused':
-                            console.log('Upload is paused');
+                            //console.log('Upload is paused');
                             break;
                         case 'running':
-                            console.log('Upload is running');
+                            //console.log('Upload is running');
                             break;
                     }
                 },
@@ -313,61 +412,109 @@ const AttendanceEmployeeScreen = (props) => {
 
     const handleTimeOut = async () => {
 
-
         let i = 0
-
-        //     console.log(taskState.value.data)
-
         taskState.value.data.map((item) => {
             if (item.status != 'Completed') {
-                console.log(item)
                 i++
             }
         })
         if (i != 0) {
-            setDataLoading(false)
-            Alert.alert('Error', 'Kindly close your pending task')
-        }
-        else {
-            let { status } = await Location.requestForegroundPermissionsAsync();
-
-            if (status !== 'granted') {
-                Alert.alert('Permission not granted', [{
-                    text: 'Close',
-                    onPress: () => null,
-                    style: 'cancel'
-                }])
-
-                setDataLoading(false)
-
-            } else {
-                let currentLocation = await Location.getCurrentPositionAsync()
-                if (currentLocation) {
-                    const downloadURL = await uploadImageToFirebase(image);
-                    if (downloadURL) {
+            // setDataLoading(false)
+            Alert.alert('Error', 'You have Pending task. Do you want to time out?', [
+                {
+                    text: 'No',
+                    onPress: () => null
+                },
+                {
+                    text: 'Yes',
+                    onPress: async () => {
                         try {
+                            let { status } = await Location.requestForegroundPermissionsAsync();
+                            if (status !== 'granted') {
+                                Alert.alert('Error', 'Need location access to mark attendance', [{
+                                    text: 'Close',
+                                    onPress: () => null,
+                                    style: 'cancel'
+                                }])
+                                setDataLoading(false)
 
-                            await addDoc(collection(db, 'Attendance'), {
-                                'attendanceBy': authState.value.data.email,
-                                'status': 'Time Out',
-                                'location': [currentLocation.coords.latitude, currentLocation.coords.longitude],
-                                'note': note,
-                                'image': downloadURL,
-                                'TimeStamp' : new Date().getTime()
-                            })
+                            } else {
+                                let currentLocation = await Location.getCurrentPositionAsync({ enableHighAccuracy: true })
+                                if (currentLocation) {
+                                    const downloadURL = await uploadImageToFirebase(image);
+                                    if (downloadURL) {
+                                        await updateDoc(doc(db, 'EmployeeAttendance', attendanceArray[0].id), {
+                                            'attendanceBy': authState.value.data.email,
+                                            'timeOut': new Date().getTime(),
+                                            'locationTimeOut': [currentLocation.coords.latitude, currentLocation.coords.longitude],
+                                            'noteTimeOut': note,
+                                            'imageTimeOut': downloadURL,
+                                        })
+                                        fetchData()
+                                    }
+                                    else {
 
+                                        Alert.alert('Error', 'Please try again')
+                                        fetchData()
+                                    }
+
+                                }
+                                else {
+                                    setDataLoading(false)
+                                    Alert.alert('Error', 'Please try again')
+                                }
+                            }
                         } catch (error) {
                             console.log(error)
+                            //console.log(error)
                             setDataLoading(false)
                         }
-                        fetchData()
+                    }
+                },
+            ])
+        }
+        else {
+            try {
+                let { status } = await Location.requestForegroundPermissionsAsync();
+                if (status !== 'granted') {
+                    Alert.alert('Error', 'Need location access to mark attendance', [{
+                        text: 'Close',
+                        onPress: () => null,
+                        style: 'cancel'
+                    }])
+
+                    setDataLoading(false)
+
+                } else {
+                    let currentLocation = await Location.getCurrentPositionAsync({ enableHighAccuracy: true })
+                    if (currentLocation) {
+                        const downloadURL = await uploadImageToFirebase(image);
+                        if (downloadURL) {
+                            await updateDoc(doc(db, 'EmployeeAttendance', attendanceArray[0].id), {
+                                'attendanceBy': authState.value.data.email,
+                                'timeOut': new Date().getTime(),
+                                'locationTimeOut': [currentLocation.coords.latitude, currentLocation.coords.longitude],
+                                'noteTimeOut': note,
+                                'imageTimeOut': downloadURL,
+                            })
+                            fetchData()
+                        }
+                        else {
+
+                            Alert.alert('Error', 'Please try again')
+                            fetchData()
+                        }
+
                     }
                     else {
+                        setDataLoading(false)
                         Alert.alert('Error', 'Please try again')
-                        fetchData()
                     }
-
                 }
+            } catch (error) {
+                console.log(error)
+                //console.log(error)
+                setDataLoading(false)
             }
         }
 
@@ -383,24 +530,20 @@ const AttendanceEmployeeScreen = (props) => {
         );
     };
 
+
     const RenderButton = () => {
+
+        const [task1, setTask1] = useState('')
+        const [task2, setTask2] = useState('')
+        const [task3, setTask3] = useState('')
+        const [task4, setTask4] = useState('')
+        const [task5, setTask5] = useState('')
 
         let contentToRender = null;
 
         if (attendanceArray.length != 0) {
-
-            const timestampDate = new Date(attendanceArray[0].TimeStamp)
-            const today = new Date()
-            const timestampYear = moment(timestampDate).format('YYYY')
-            const timestampMonth = moment(timestampDate).format('MM')
-            const timestampDay = moment(timestampDate).format('DD')
-
-            const todayYear = moment(today).format('YYYY')
-            const todayMonth = moment(today).format('MM')
-            const todayDay = moment(today).format('DD')
-
-            if (timestampYear == todayYear && timestampMonth == todayMonth && timestampDay == todayDay) {
-                if (attendanceArray[0].status == 'Time Out') {
+            if (attendanceArray[0].timeIn) {
+                if (moment(new Date(attendanceArray[0].timeIn)).format("DD-MM-YYYY").toString() == moment(new Date()).format("DD-MM-YYYY").toString()) {
                     contentToRender = (
                         <>
                             {imgLoading ?
@@ -421,20 +564,18 @@ const AttendanceEmployeeScreen = (props) => {
                                     }}
                                 >Add Image</Button>
                             }
-
-
-                            <Button
-                                status='info'
+                            <Button status="danger"
+                                disabled={!image || !note}
                                 style={{ width: '40%', marginTop: 20 }}
                                 onPress={() => {
-                                    if (image) {
+                                    if (image && note.length != 0) {
                                         setDataLoading(true)
                                         setModalVisible(false)
-                                        handleTimeIn()
+                                        handleTimeOut()
                                     }
 
                                 }}
-                            >Time In</Button>
+                            >Time Out</Button>
                         </>
                     )
                 }
@@ -459,55 +600,85 @@ const AttendanceEmployeeScreen = (props) => {
                                     }}
                                 >Add Image</Button>
                             }
-                            <Button status="danger"
-                                style={{ width: '40%', marginTop: 20 }}
-                                onPress={() => {
-                                    if (image && note.length != 0) {
-                                        setDataLoading(true)
-                                        setModalVisible(false)
-                                        handleTimeOut()
-                                    }
 
-                                }}
-                            >Time Out</Button>
+                            {authState.value.data.designation == 'Sales'
+                                ?
+                                !image
+                                    ?
+                                    null
+                                    :
+                                    <>
+                                        <Input
+                                            style={{ marginVertical: 10 }}
+                                            placeholder="Task 1"
+                                            value={task1}
+                                            onChangeText={(txt) => setTask1(txt)}
+                                            size="large"
+                                            maxLength={150}
+                                        >
+                                        </Input>
+                                        <Input
+                                            placeholder="Task 2"
+                                            value={task2}
+                                            onChangeText={setTask2}
+                                            size="large"
+                                            maxLength={150}
+                                        >
+                                        </Input>
+                                        <Input
+                                            style={{ marginVertical: 10 }}
+                                            placeholder="Task 3"
+                                            value={task3}
+                                            onChangeText={setTask3}
+                                            size="large"
+                                            maxLength={150}
+                                        >
+                                        </Input>
+                                        <Input
+                                            placeholder="Task 4"
+                                            value={task4}
+                                            onChangeText={setTask4}
+                                            size="large"
+                                            maxLength={150}
+                                        >
+                                        </Input>
+                                        <Input
+                                            style={{ marginTop: 10 }}
+                                            placeholder="Task 5"
+                                            value={task5}
+                                            onChangeText={setTask5}
+                                            size="large"
+                                            maxLength={150}
+                                        >
+                                        </Input>
+                                        <Button
+                                            disabled={!image || !note || !task1 || !task2 || !task3 || !task4 || !task5}
+                                            style={{ width: '40%', marginTop: 20 }}
+                                            onPress={() => {
+                                                if (image) {
+                                                    setDataLoading(true)
+                                                    setModalVisibleSales(false)
+                                                    handleTimeInSales(task1, task2, task3, task4, task5)
+                                                }
+                                            }}
+                                        >Time In</Button>
+                                    </>
+                                :
+                                <Button
+                                    disabled={!image || !note}
+                                    style={{ width: '40%', marginTop: 20 }}
+                                    onPress={() => {
+                                        if (image) {
+                                            setDataLoading(true)
+                                            setModalVisible(false)
+                                            handleTimeIn()
+                                        }
+                                    }}
+                                >Time In</Button>}
+
                         </>
                     )
                 }
-            }
-            else {
-                contentToRender = (
-                    <>
-                        {imgLoading ?
-                            <View style={{ marginTop: 10 }}>
-                                <ActivityIndicator color="#57D1D7" size='large' />
-                            </View>
-                            : null}
-                        {image
-                            ?
-                            <Image style={{ width: 100, height: 100, marginTop: 10 }} source={{ uri: image }}></Image>
-                            :
-                            <Button
-                                status='info'
-                                style={{ width: '40%', marginTop: 20 }}
-                                onPress={() => {
-                                    setImgLoading(true)
-                                    pickImage()
-                                }}
-                            >Add Image</Button>
-                        }
-
-                        <Button
-                            style={{ width: '40%', marginTop: 20 }}
-                            onPress={() => {
-                                if (image) {
-                                    setDataLoading(true)
-                                    setModalVisible(false)
-                                    handleTimeIn()
-                                }
-                            }}
-                        >Time In</Button>
-                    </>
-                )
             }
         }
         else {
@@ -532,46 +703,167 @@ const AttendanceEmployeeScreen = (props) => {
                         >Add Image</Button>
                     }
 
-                    <Button
-                        style={{ width: '40%', marginTop: 20 }}
-                        onPress={() => {
-                            if (image) {
-                                setDataLoading(true)
-                                setModalVisible(false)
-                                handleTimeIn()
-                            }
-                        }}
-                    >Time In</Button>
+                    {authState.value.data.designation == 'Sales'
+                        ?
+                        !image
+                        ?
+                        null
+                        :
+                        <>
+                            <Input
+                                style={{ marginVertical: 10 }}
+                                placeholder="Task 1"
+                                value={task1}
+                                onChangeText={setTask1}
+                                size="large"
+                                maxLength={150}
+                            >
+                            </Input>
+                            <Input
+                                placeholder="Task 2"
+                                value={task2}
+                                onChangeText={setTask2}
+                                size="large"
+                                maxLength={150}
+                            >
+                            </Input>
+                            <Input
+                                style={{ marginVertical: 10 }}
+                                placeholder="Task 3"
+                                value={task3}
+                                onChangeText={setTask3}
+                                size="large"
+                                maxLength={150}
+                            >
+                            </Input>
+                            <Input
+                                placeholder="Task 4"
+                                value={task4}
+                                onChangeText={setTask4}
+                                size="large"
+                                maxLength={150}
+                            >
+                            </Input>
+                            <Input
+                                style={{ marginTop: 10 }}
+                                placeholder="Task 5"
+                                value={task5}
+                                onChangeText={setTask5}
+                                size="large"
+                                maxLength={150}
+                            >
+                            </Input>
+                            <Button
+                                disabled={!image || !note || !task1 || !task2 || !task3 || !task4 || !task5}
+                                style={{ width: '40%', marginTop: 20 }}
+                                onPress={() => {
+                                    if (image) {
+                                        setDataLoading(true)
+                                        setModalVisibleSales(false)
+                                        handleTimeInSales(task1, task2, task3, task4, task5)
+                                    }
+                                }}
+                            >Time In</Button>
+                        </>
+                        :
+                        <Button
+                            disabled={!image || !note}
+                            style={{ width: '40%', marginTop: 20 }}
+                            onPress={() => {
+                                if (image) {
+                                    setDataLoading(true)
+                                    setModalVisible(false)
+                                    handleTimeIn()
+                                }
+                            }}
+                        >Time In</Button>}
                 </>
             )
         }
 
         return contentToRender
+
+    }
+
+
+    const MyTable = ({ header, data, }) => {
+
+        return (
+            <Layout style={{ flex: 1, paddingVertical: 10 }}>
+                <ScrollView>
+                    <DataTable >
+                        <DataTable.Header style={{ borderBottomWidth: 1 }} >
+                            {header.map((column, index) => {
+                                return (
+                                    <DataTable.Title textStyle={[universalStyles.tableHeaderTxtStyle, { color: theme['color-primary-500'] }]} style={{ marginHorizontal: 10 }} key={index}>{column}</DataTable.Title>
+                                )
+                            })}
+
+                        </DataTable.Header>
+
+                        {data.map((item, index) => (
+                            <DataTable.Row key={index} style={{}}>
+                                <DataTable.Cell textStyle={universalStyles.formTxtStyle} style={{ marginHorizontal: 10 }}>{item.timeIn ? moment(new Date(item.timeIn)).format('DD-MM-YYYY') : '-'}</DataTable.Cell>
+                                <DataTable.Cell textStyle={universalStyles.formTxtStyle} style={{ marginHorizontal: 10 }}>{item.timeIn ? moment(new Date(item.timeIn)).format('hh:mm A') : '-'}</DataTable.Cell>
+                                <DataTable.Cell textStyle={universalStyles.formTxtStyle} style={{ marginHorizontal: 10 }}>{item.timeOut ? moment(new Date(item.timeOut)).format('hh:mm A') : '-'}</DataTable.Cell>
+                            </DataTable.Row>
+                        ))}
+
+                    </DataTable>
+                </ScrollView>
+            </Layout>
+        );
+
+    }
+
+    const clearAll = () => {
+        setNote('')
+        setImage(null)
     }
 
     return (
-        <Layout style={{ flex: 1, alignItems: 'center', paddingVertical: 10, }}>
-
+        <Layout style={{ flex: 1, alignItems: 'center', padding: 10 }}>
             <View style={{ flex: 1, width: '100%' }}>
 
-                <FlatList style={{ width: '100%', marginVertical: 20, paddingHorizontal: 20 }}
-                    data={attendanceArray}
-                    showsVerticalScrollIndicator={false}
-                    renderItem={({ item, index }) => {
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                    <Select
+                        size="large"
+                        style={{ width: 150 }}
+                        label="Select Month"
+                        value={selectedMonth}
+                        onSelect={(index) => {
+                            setSelectedMonth(months[index - 1])
+                        }}
+                    >
+                        {months
 
-                        return (
-                            <View style={styles.card}>
-                                <View style={styles.cardHeader}>
-                                    <Text style={styles.cardStatus}>{item.status}</Text>
-                                    {item.TimeStamp ?
-                                        <Text style={styles.cardTimestamp}>{(new Date(item.TimeStamp)).toLocaleString(undefined, options)}</Text>
-                                        : <ActivityIndicator color="#57D1D7" />}
-                                </View>
-                                <Text style={styles.cardNote}>{item.note}</Text>
-                            </View>
-                        )
-                    }}
-                    ListEmptyComponent={() => renderEmptyAsset()} />
+                            .map((item, index) => (
+                                <SelectItem key={index} title={item} />
+                            ))}
+                    </Select>
+
+                    <Select
+                        size="large"
+                        style={{ width: 150 }}
+                        label="Select Year"
+                        value={selectedYear}
+                        onSelect={(index) => {
+                            setSelectedYear(pastYears[index - 1])
+                        }}
+                    >
+                        {pastYears
+                            .map((item, index) => (
+                                <SelectItem key={index} title={item} />
+                            ))}
+                    </Select>
+
+                    {/* <CSVLink data={downloadData}>Download me</CSVLink>; */}
+
+                </View>
+                <MyTable
+                    header={columns}
+                    data={selectedMonth != 'All' ? attendanceArray.filter((item) => moment(new Date(item.timeIn)).format("M").toString() == selectedMonth && moment(new Date(item.timeIn)).format("YYYY").toString() == selectedYear.toString()) : attendanceArray.filter((item) => moment(new Date(item.timeIn)).format("YYYY").toString() == selectedYear.toString())}
+                />
 
                 <View style={{ width: '90%', alignSelf: 'center' }}>
 
@@ -583,7 +875,7 @@ const AttendanceEmployeeScreen = (props) => {
                                 <Button
                                     style={{}}
                                     onPress={() => {
-                                        setNote('')
+                                        clearAll()
                                         setModalVisible(true)
                                     }}
                                 >Mark attendance</Button>
@@ -598,16 +890,14 @@ const AttendanceEmployeeScreen = (props) => {
 
             <Modal
                 visible={modalVisible}
-                animationType="slide">
-                <View style={{ height: Dimensions.get('screen').height, width: Dimensions.get('screen').width, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CCCCCC58', }}>
-                    <Card style={{ width: '95%', }}>
-                        <TouchableOpacity style={{ alignItems: 'flex-end', marginBottom: 20, width: '100%', }}
-                            onPress={() => {
-                                setImage(null)
-                                setModalVisible(false)
-                            }}>
-                            <Image style={{ width: 20, height: 20, }} source={require('../../assets/cross_icon.png')} tintColor='red'></Image>
-                        </TouchableOpacity>
+                animationType="slide"
+                onBackdropPress={() => {
+                    setModalVisible(false)
+                }}
+                backdropStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', }}>
+                <View style={{ height: 'auto', width: Dimensions.get('screen').width, alignItems: 'center', justifyContent: 'center', }}>
+                    <Card disabled style={{ width: '95%', paddingVertical: 20 }}>
+
                         <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
                             <Input
                                 placeholder="Enter Note"
@@ -617,20 +907,42 @@ const AttendanceEmployeeScreen = (props) => {
                                 maxLength={150}
                             >
                             </Input>
-
                             <Text style={{ alignSelf: 'flex-start', marginTop: 10, fontSize: 10, color: 'red' }}>{150 - note.length} characters limit</Text>
                             <RenderButton />
-
-
                         </View>
-
-
                     </Card>
                 </View>
             </Modal >
+
+            {/* <Modal
+                visible={modalVisibleSales}
+                animationType="slide"
+                onBackdropPress={() => {
+                    setModalVisibleSales(false)
+                }}
+                backdropStyle={{ backgroundColor: 'rgba(0, 0, 0, 0.5)', }}>
+                <View style={{ height: 'auto', width: Dimensions.get('screen').width, alignItems: 'center', justifyContent: 'center', }}>
+                    <Card disabled style={{ width: '95%', paddingVertical: 20 }}>
+
+                        <View style={{ width: '100%', justifyContent: 'center', alignItems: 'center' }}>
+                            <Input
+                                placeholder="Enter Note"
+                                value={note}
+                                onChangeText={setNote}
+                                size="large"
+                                maxLength={150}
+                            >
+                            </Input>
+                            <Text style={{ alignSelf: 'flex-start', marginTop: 10, fontSize: 10, color: 'red' }}>{150 - note.length} characters limit</Text>
+
+                            <RenderButton />
+                        </View>
+                    </Card>
+                </View>
+            </Modal > */}
 
         </Layout >
     )
 }
 
-export default AttendanceEmployeeScreen
+export default memo(AttendanceEmployeeScreen)

@@ -1,14 +1,16 @@
 import { StatusBar } from "expo-status-bar";
 import { useState, useEffect, useRef, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, LayoutAnimation } from 'react-native';
+import { View, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { createUserWithEmailAndPassword, getAuth, sendPasswordResetEmail } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, getFirestore, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import styles from "../styles/styles";
 import app from "../config/firebase";
 import { Alert } from "react-native";
-import { Layout, Text, Input, Button, } from '@ui-kitten/components'
+import { Layout, Text, Input, Button, useTheme} from '@ui-kitten/components'
 
 const ForgetPasswordScreen = (props) => {
+
+  const theme = useTheme()
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,7 +26,6 @@ const ForgetPasswordScreen = (props) => {
   useEffect(() => {
     
     props.navigation.addListener('beforeRemove', (e) => {
-      console.log(e.data.action.type)
       if(e.data.action.type == "GO_BACK"){
         e.preventDefault();
       }
@@ -94,6 +95,7 @@ const ForgetPasswordScreen = (props) => {
                 label="Enter Email"
                 value={email}
                 onChangeText={setEmail}
+                accessoryLeft={()=> <Image style={{height:20, width:20}} source={require('../../assets/email_icon.png')} tintColor={theme['color-basic-500']}></Image>}
               />
               {!isEmailValid ? <Text status='danger' style={{ fontFamily: 'inter-regular', fontSize: 10, marginTop: 5, width: '100%' }}>Enter valid email</Text> : null}
 
@@ -113,7 +115,6 @@ const ForgetPasswordScreen = (props) => {
           <View style={{ flexDirection: 'row', marginTop: 20, alignItems: 'center' }}>
             <Text style={{ fontFamily: 'inter-medium', fontSize: 14 }}>Already have an account?</Text>
             <TouchableOpacity onPress={() => {
-              console.log('ubaid')
                 setEmail('')
                 props.navigation.replace('login')}}>
               <Text style={{ fontFamily: 'inter-bold' }} status="primary"> Login</Text>

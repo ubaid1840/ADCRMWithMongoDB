@@ -37,11 +37,12 @@ const TaskDetailScreen = (props) => {
     const [openImageVisible, setOpenImageVisble] = useState(false)
 
     useEffect(() => {
-        const unsubscribe = onSnapshot(doc(db, 'Tasks', data.id), (doc) => {
-            if (doc.data()) {
-                setData({ ...doc.data(), 'id': doc.id })
-                if (doc.data().comments) {
-                    setComments(doc.data().comments)
+       
+        const unsubscribe = onSnapshot(doc(db, 'Tasks', data.id), (docs) => {
+            if (docs.data()) {
+                setData({ ...docs.data(), 'id': docs.id })
+                if (docs.data().comments) {
+                    setComments(docs.data().comments)
                 }
                 setLoading(false)
                 setDataLoading(false)
@@ -78,13 +79,11 @@ const TaskDetailScreen = (props) => {
                 'timeStamp': new Date().getTime(),
                 'image': downloadURL
             })
-            const udpatedComments = {
-                'comments': oldComments,
-            }
+    
 
             try {
                 await updateDoc(doc(db, 'Tasks', data.id), {
-                    'comments': udpatedComments
+                    'comments': oldComments
                 })
                     .then(() => {
                         setAddComment("")
@@ -211,8 +210,7 @@ const TaskDetailScreen = (props) => {
                 () => {
                     // Upload completed successfully, now we can get the download URL
                     getDownloadURL(uploadTask.snapshot.ref).then((downloadURL) => {
-                        // dbUpdate(downloadURL)
-                        console.log(downloadURL)
+                        
                         resolve(downloadURL);
                     }).catch((error) => {
                         reject(null);
@@ -485,12 +483,10 @@ const TaskDetailScreen = (props) => {
                         if (image == null) {
                             handleUpdateComment()
                         }
-
                         else {
                             setDataLoading(true)
                             handleUpdateCommentAndImage()
                         }
-
                     }}>
                         <Image style={{ height: 25, width: 25 }} source={require('../../assets/comment_icon.png')} />
                     </TouchableOpacity>

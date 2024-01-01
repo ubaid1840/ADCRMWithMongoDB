@@ -1,4 +1,4 @@
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { getAuth, onAuthStateChanged, signOut } from 'firebase/auth';
 import { useState, useEffect, useRef, useContext } from 'react';
 import app from '../config/firebase';
 import { ActivityIndicator, ScrollView, Alert, Animated, Image, View, Text, Dimensions, BackHandler } from 'react-native';
@@ -28,10 +28,9 @@ const CheckLogin = (props) => {
     const moveText = useRef(new Animated.ValueXY({ x: Dimensions.get('window').width, y: 0 })).current
     const moveLogoText = useRef(new Animated.Value(0)).current
     const [loading, setLoading] = useState(false)
-    const [height, setHeight] = useState(Dimensions.get('screen').height)
     const { state: authState, setAuth } = useContext(AuthContext)
     const { state: peopleState, setPeople } = useContext(PeopleContext)
-    const {state : tokenState , setToken} = useContext(TokenContext)
+    const { state: tokenState, setToken } = useContext(TokenContext)
 
     useEffect(() => {
         setTimeout(() => {
@@ -60,9 +59,9 @@ const CheckLogin = (props) => {
                         setLoading(true)
                         setTimeout(async () => {
                             setLoading(true)
-                            const res = await requestLocationPermission()
-                            if (res == true)
-                                checkLogin()
+                            // const res = await requestLocationPermission()
+                            // if (res == true)
+                            checkLogin()
                         }, 800)
                     })
                 })
@@ -79,45 +78,64 @@ const CheckLogin = (props) => {
             onAuthStateChanged(auth, async (user) => {
                 if (user) {
                     try {
+                        //console.log(user.email)
                         const db = getFirestore(app)
                         await getDocs(collection(db, 'AllowedUsers'))
                             .then((snapshop) => {
                                 let list = []
                                 snapshop.forEach((docs) => {
-                                    list.push({...docs.data(), 'id' : docs.id})
+                                    list.push({ ...docs.data(), 'id': docs.id })
                                 })
                                 setPeople(list)
-                                const updatedList = list.filter(item => item.email == user.email)
-                                registerForPushNotificationsAsync().then(async token => {
-                                    if(token){
-                                        await updateDoc(doc(db, "AllowedUsers", updatedList[0].id ), {
-                                            'token' : token
-                                        })
+                                const updatedList = [...list.filter(item => item.email === user.email)]
+                                //console.log(updatedList)
+                                if (updatedList.length != 0 && updatedList[0].designation != 'Owner') {
+                                    registerForPushNotificationsAsync().then(async token => {
+                                        if (token) {
+                                            await updateDoc(doc(db, "AllowedUsers", updatedList[0].id), {
+                                                'token': token
+                                            })
+                                        }
+                                        setToken(token)
+                                    });
+                                    setAuth(updatedList[0])
+                                    if (updatedList[0].designation == 'Manager') {
+                                        setLoading(false)
+                                        props.navigation.replace('afterloginmanager')
                                     }
-                                    setToken(token)});
-                                setAuth(updatedList[0])
-                                if (updatedList[0].designation == 'Owner') {
-                                    setLoading(false)
-                                    props.navigation.replace('afterlogin')
-                                }
-                                else if (updatedList[0].designation == 'Manager') {
-                                    setLoading(false)
-                                    props.navigation.replace('afterloginmanager')
+                                    else {
+                                        setLoading(false)
+                                        props.navigation.replace('afterloginemployee')
+                                    }
                                 }
                                 else {
-                                    setLoading(false)
-                                    props.navigation.replace('afterloginemployee')
+                                    signOut(auth).then(() => {
+                                        setLoading(false)
+                                        props.navigation.replace('login')
+                                    }).catch((error) => {
+                                        //console.log('error')
+                                        setLoading(false)
+                                        props.navigation.replace('login')
+                                    });
                                 }
+
                             })
 
                     } catch (error) {
-                        console.log(error)
+                        // console.log(error)
                         setLoading(false)
-                        Alert.alert('Error', error [
+                        Alert.alert('Error', 'Contact Owner', [
                             {
                                 text: 'Close',
                                 onPress: () => {
-                                    props.navigation.replace('login')
+                                    signOut(auth).then(() => {
+                                        setLoading(false)
+                                        props.navigation.replace('login')
+                                    }).catch((error) => {
+                                        //console.log('error')
+                                        setLoading(false)
+                                        props.navigation.replace('login')
+                                    });
                                 }
                             }
                         ])
@@ -143,19 +161,6 @@ const CheckLogin = (props) => {
     }
 
 
-    async function checkNetworkStatus() {
-        const status = await Network.getNetworkStateAsync();
-        if (status.isConnected == false) {
-            setLoading(false)
-
-        }
-        else {
-            const res = await requestLocationPermission()
-            if (res == true)
-                checkLogin()
-        }
-    }
-
     async function requestLocationPermission() {
         let locationPermission = await Location.requestForegroundPermissionsAsync();
 
@@ -175,9 +180,6 @@ const CheckLogin = (props) => {
                 ])
             }
         })
-
-
-
     }
 
     return (
@@ -195,8 +197,6 @@ const CheckLogin = (props) => {
             ></Animated.Image>
 
             <ActivityIndicator color="#57D1D7" size="large" animating={loading} />
-
-
             <StatusBar style="light" />
 
 

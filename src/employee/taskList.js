@@ -132,12 +132,13 @@ const TaskListEmployeeScreen = (props) => {
                 'taskName': task,
                 'assignedTo': authState.value.data.email,
                 'status': 'Pending',
-                'TimeStamp' : new Date().getTime()
+                'TimeStamp' : new Date().getTime(),
+                'type' : 'Office Task'
             })
             fetchData()
 
         } catch (error) {
-            console.log(error)
+            //console.log(error)
             setLoading(false)
         }
     }
@@ -192,7 +193,7 @@ const TaskListEmployeeScreen = (props) => {
                                 )
                         }}
                         ListEmptyComponent={() => renderEmptyAsset()} />
-                    <View style={{ width: '80%', alignSelf: 'center' }}>
+                    <View style={{ width: '80%', maxWidth:300, alignSelf: 'center' }}>
 
                         <Button appearance='filled' onPress={() => {
                             setTask('')
@@ -205,9 +206,10 @@ const TaskListEmployeeScreen = (props) => {
 
                 <Modal
                     visible={modalVisible}
-                    animationType="slide">
-                    <View style={{ height: Dimensions.get('screen').height, width: Dimensions.get('screen').width, alignItems: 'center', justifyContent: 'center', backgroundColor: '#CCCCCC58', }}>
-                        <Card style={{ width: '95%', }}>
+                    animationType="slide"
+                    onBackdropPress={() => setModalVisible(false)}
+                    backdropStyle={{ backgroundColor: '#6B6B6B6A' }}>
+                        <Card style={{ width: Dimensions.get('screen').width-50, }}>
                             <TouchableOpacity style={{ alignItems: 'flex-end', marginBottom: 20, width: '100%', }}
                                 onPress={() => setModalVisible(false)}>
                                 <Image style={{ width: 20, height: 20, }} source={require('../../assets/cross_icon.png')} tintColor='red'></Image>
@@ -231,7 +233,7 @@ const TaskListEmployeeScreen = (props) => {
 
 
                         </Card>
-                    </View>
+                 
                 </Modal>
             </Layout>
 

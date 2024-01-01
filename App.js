@@ -1,7 +1,7 @@
-import { NavigationContainer, useNavigation} from '@react-navigation/native';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { DrawerItemList, createDrawerNavigator } from '@react-navigation/drawer';
-import { Image,TouchableOpacity, View, BackHandler, Alert, StyleSheet, } from 'react-native';
+import { Image, TouchableOpacity, View, BackHandler, Alert, StyleSheet, } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import * as Font from 'expo-font';
 import Constants from "expo-constants";
@@ -22,7 +22,7 @@ import ForgetPasswordScreen from './src/screens/forgetPassword';
 import ProfileScreen from './src/screens/profile';
 import PropleScreen from './src/screens/people'
 
-import { ApplicationProvider, Text, Layout, } from '@ui-kitten/components';
+import { ApplicationProvider, Text, Layout, DrawerGroup, DrawerItem, Drawer, IndexPath, Menu, MenuGroup, MenuItem } from '@ui-kitten/components';
 import * as eva from '@eva-design/eva'
 import { default as theme } from './custom-theme.json'
 import TaskDetailScreen from './src/screens/taskDetail';
@@ -34,7 +34,7 @@ import AuthContextProvider, { AuthContext } from './src/store/context/AuthContex
 import PeopleContextProvider from './src/store/context/PeopleContext';
 import TaskContextProvider from './src/store/context/TaskContext'
 import { getAuth, signOut } from 'firebase/auth';
-import {Messaging} from 'firebase/messaging'
+import { Messaging } from 'firebase/messaging'
 import app from './src/config/firebase';
 
 import DashboardEmployeeScreen from './src/employee/dashboardEmployee'
@@ -53,12 +53,16 @@ import * as Notifications from 'expo-notifications';
 import TokenContextProvider, { TokenContext } from './src/store/context/TokenContext';
 import { Linking } from 'react-native';
 import { doc, getDoc, getFirestore } from 'firebase/firestore';
+import TaskListHistoryManagerScreen from './src/manager/taskListHistoryManager';
+import BranchExpensesScreen from './src/manager/branchExpenses';
+import { PaperProvider } from "react-native-paper";
+import ReimbursementEmployeeScreen from './src/employee/reimbursement';
 
 
 
 
 const AppStack = createNativeStackNavigator();
-const Drawer = createDrawerNavigator()
+const MyDrawer = createDrawerNavigator()
 
 
 const customFonts = {
@@ -71,7 +75,6 @@ const customFonts = {
 const AfterLoginEmployee = (props1) => {
 
   const { state: authState } = useContext(AuthContext)
-  const { state: locationState, setLocation } = useContext(LocationContext)
 
   useEffect(() => {
     props1.navigation.addListener('beforeRemove', (e) => {
@@ -94,51 +97,33 @@ const AfterLoginEmployee = (props1) => {
       Alert.alert('Error', 'Permission to access location was denied');
       return;
     }
-
-    await Location.watchPositionAsync({ distanceInterval: 100, accuracy: 6 }, response => {
-      setLocation(response)
-    })
   }
 
 
   return (
-    <Drawer.Navigator
+    <MyDrawer.Navigator
       drawerContent={(props) => {
         return (
           <Layout style={{ flex: 1, paddingTop: Platform.OS == 'android' ? Constants.statusBarHeight : 0 }}>
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
               <Image style={{ height: 50, width: 200 }} source={require('./assets/senfeng/senfengLogo.png')} resizeMode='contain'></Image>
-              <TouchableOpacity onPress={() => {
-                Alert.alert('Error', 'Contact your manager to unlock all features')
-              }}>
-                <Text style={{ color: 'yellow' }}>Unlock features</Text>
-              </TouchableOpacity>
             </View>
 
             <View style={{ marginBottom: 20, marginHorizontal: 20, padding: 15, borderRadius: 15, backgroundColor: '#1a4663', }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', }}>
-                <Image style={{ height: 50, width: 50, borderRadius: 25 }} source={require('./assets/profile_icon.png')} tintColor={'#FFFFFF'}></Image>
+                <Image style={{ height: 50, width: 50, borderRadius: 25 }} source={authState.value.data.dp ? { uri: authState.value.data.dp } : require('./assets/profile_icon.png')} tintColor={authState.value.data.dp ? null : '#FFFFFF'}></Image>
                 <View style={{ marginLeft: 15, flex: 1 }}>
                   {authState.value.data.length != 0
                     ?
                     <Text style={{ fontFamily: 'inter-bold', fontSize: 15, }}>{authState.value.data.name}</Text>
                     :
                     null}
-
-                  {/* <TouchableOpacity onPress={() => {
-                    props.navigation.closeDrawer();
-                    // props1.navigation.navigate('profile')
-                  }}>
-                    <Text style={{ fontFamily: 'inter-regular', color: '#23d3d3' }}>Profile</Text>
-                  </TouchableOpacity> */}
                 </View>
               </View>
             </View>
             <DrawerItemList {...props} />
 
             <View style={{ flex: 1, alignItems: 'flex-end', flexDirection: 'row', marginBottom: 40, marginLeft: 20 }}>
-
-
 
               <TouchableOpacity onPress={() => {
                 Alert.alert('Confirm', 'Do you want to logout?', [
@@ -151,16 +136,15 @@ const AfterLoginEmployee = (props1) => {
                     onPress: () => {
                       const auth = getAuth(app)
                       signOut(auth).then(() => {
-                        // Sign-out successful.
                         props.navigation.navigate('login')
                       }).catch((error) => {
-                        console.log('error')
+                        //console.log('error')
                       });
                     }
                   }
                 ])
               }}>
-                <Image style={{ width: 40, height: 40, transform: [{ rotate: '180deg' }] }} source={require('./assets/logout_icon.png')} tintColor='white'></Image>
+                <Image style={{ width: 30, height: 30, transform: [{ rotate: '180deg' }] }} source={require('./assets/logout1_icon.png')} tintColor='white'></Image>
               </TouchableOpacity>
 
             </View>
@@ -173,19 +157,22 @@ const AfterLoginEmployee = (props1) => {
         drawerStyle: {
 
           // paddingTop: Platform.OS == 'android' ? Constants.statusBarHeight : 0,
-          width: '70%'
+          width: 300
         },
         headerStyle: {
           backgroundColor: '#232f3f'
         },
         headerTintColor: '#FFFFFF',
         drawerActiveTintColor: '#000000',
-      }} >
-      <Drawer.Screen name="dashboardemployee" component={DashboardEmployeeScreen}
+      }}
+    >
+
+
+      <MyDrawer.Screen name="dashboardemployee" component={DashboardEmployeeScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
-              <Image style={{ height: 20, width: 20, }} source={require('./assets/dashboard.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/dashboard_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
             )
           },
           title: ({ focused }) => {
@@ -198,66 +185,68 @@ const AfterLoginEmployee = (props1) => {
               <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Dashboard</Text>
             )
           }
-        }} />
+        }}
+      />
 
-      <Drawer.Screen name="attendanceemployee" component={AttendanceEmployeeScreen}
+      <MyDrawer.Screen name="attendanceemployee" component={AttendanceEmployeeScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
-              <Image style={{ height: 20, width: 20, }} source={require('./assets/attendance.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/hr_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
             )
           },
           title: ({ focused }) => {
             return (
-              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Attendance History</Text>
+              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Attendance</Text>
             )
           },
           headerTitle: () => {
             return (
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Attendance History</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Attendance</Text>
             )
           }
-        }} />
+        }}
+      />
 
-      <Drawer.Screen name="tasklistemployee" component={TaskListEmployeeScreen}
+      <MyDrawer.Screen name="tasklisthistoryemployee" component={TaskListHistoryEmployeeScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
-              <Image style={{ height: 20, width: 20, }} source={require('./assets/attendance.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/task_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
             )
           },
           title: ({ focused }) => {
             return (
-              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Today Task</Text>
+              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Task</Text>
             )
           },
           headerTitle: () => {
             return (
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Today Task</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Task</Text>
             )
           }
         }} />
 
-      <Drawer.Screen name="tasklisthistoryemployee" component={TaskListHistoryEmployeeScreen}
+      <MyDrawer.Screen name="reimbursementemployee" component={ReimbursementEmployeeScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
-              <Image style={{ height: 20, width: 20, }} source={require('./assets/attendance.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/finance_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
             )
           },
           title: ({ focused }) => {
             return (
-              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Task History</Text>
+              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Reimbursement</Text>
             )
           },
           headerTitle: () => {
             return (
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Task History</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Reimbursement</Text>
             )
           }
         }} />
 
-    </Drawer.Navigator>
+    </MyDrawer.Navigator>
   )
 }
 
@@ -277,21 +266,21 @@ const AfterLoginManager = (props1) => {
   }, [props1.navigation]);
 
   return (
-    <Drawer.Navigator
+    <MyDrawer.Navigator
       drawerContent={(props) => {
         return (
           <Layout style={{ flex: 1, paddingTop: Platform.OS == 'android' ? Constants.statusBarHeight : 0 }}>
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
               <Image style={{ height: 50, width: 200 }} source={require('./assets/senfeng/senfengLogo.png')} resizeMode='contain'></Image>
-              <TouchableOpacity onPress={() => {
+              {/* <TouchableOpacity onPress={() => {
                 Alert.alert('Error', 'Contact your manager to unlock all features')
               }}>
                 <Text style={{ color: 'yellow' }}>Unlock features</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
             <View style={{ marginBottom: 20, marginHorizontal: 20, padding: 15, borderRadius: 15, backgroundColor: '#1a4663', }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', }}>
-                <Image style={{ height: 50, width: 50, borderRadius: 25 }} source={require('./assets/profile_icon.png')} tintColor={'#FFFFFF'}></Image>
+                <Image style={{ height: 50, width: 50, borderRadius: 25 }} source={authState.value.data.dp ? { uri: authState.value.data.dp } : require('./assets/profile_icon.png')} tintColor={authState.value.data.dp ? null : '#FFFFFF'}></Image>
                 <View style={{ marginLeft: 15, flex: 1 }}>
                   {authState.value.data.length != 0
                     ?
@@ -327,13 +316,13 @@ const AfterLoginManager = (props1) => {
                         // Sign-out successful.
                         props.navigation.navigate('login')
                       }).catch((error) => {
-                        console.log('error')
+                        //console.log('error')
                       });
                     }
                   }
                 ])
               }}>
-                <Image style={{ width: 40, height: 40, transform: [{ rotate: '180deg' }] }} source={require('./assets/logout_icon.png')} tintColor='white'></Image>
+                <Image style={{ width: 30, height: 30, transform: [{ rotate: '180deg' }] }} source={require('./assets/logout1_icon.png')} tintColor='white'></Image>
               </TouchableOpacity>
 
             </View>
@@ -352,11 +341,11 @@ const AfterLoginManager = (props1) => {
         headerTintColor: '#FFFFFF',
         drawerActiveTintColor: '#000000',
       }} >
-      <Drawer.Screen name="dashboardManager" component={DashboardManagerScreen}
+      <MyDrawer.Screen name="dashboardManager" component={DashboardManagerScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
-              <Image style={{ height: 20, width: 20, }} source={require('./assets/dashboard.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/dashboard_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
             )
           },
           title: ({ focused }) => {
@@ -371,11 +360,11 @@ const AfterLoginManager = (props1) => {
           }
         }} />
 
-      <Drawer.Screen name="attendanceManager" component={AttendanceScreenManager}
+      <MyDrawer.Screen name="attendanceManager" component={AttendanceScreenManager}
         options={{
           drawerIcon: ({ focused }) => {
             return (
-              <Image style={{ height: 20, width: 20, }} source={require('./assets/attendance.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/hr_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
             )
           },
           title: ({ focused }) => {
@@ -390,29 +379,29 @@ const AfterLoginManager = (props1) => {
           }
         }} />
 
-      <Drawer.Screen name="assigntaskManager" component={AssignTaskManagerScreen}
+      <MyDrawer.Screen name="assigntaskManager" component={AssignTaskManagerScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
-              <Image style={{ height: 20, width: 20, }} source={require('./assets/task.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/task_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
             )
           },
           title: ({ focused }) => {
             return (
 
-              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Assign Task</Text>
+              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Team Task</Text>
 
             )
           },
           headerTitle: () => {
             return (
-              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Assign Task</Text>
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Team Task</Text>
             )
           }
 
         }} />
 
-      <Drawer.Screen name="mytaskManager" component={MyTaskManagerScreen}
+      <MyDrawer.Screen name="mytaskManager" component={MyTaskManagerScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
@@ -434,7 +423,52 @@ const AfterLoginManager = (props1) => {
 
         }} />
 
-    </Drawer.Navigator>
+      <MyDrawer.Screen name="reimbursementemployee" component={ReimbursementEmployeeScreen}
+        options={{
+          drawerIcon: ({ focused }) => {
+            return (
+              <Image style={{ height: 20, width: 20, }} source={require('./assets/finance_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+            )
+          },
+          title: ({ focused }) => {
+            return (
+              <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Reimbursement</Text>
+            )
+          },
+          headerTitle: () => {
+            return (
+              <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Reimbursement</Text>
+            )
+          }
+        }} />
+
+      {authState.value.data.branchExpensesAssigned ?
+        <MyDrawer.Screen name="branchexpensesscreen" component={BranchExpensesScreen}
+          options={{
+            drawerIcon: ({ focused }) => {
+              return (
+                <Image style={{ height: 20, width: 20, }} source={require('./assets/salary_icon.png')} tintColor={focused ? '#23d3d3' : '#FFFFFF'} ></Image>
+              )
+            },
+            title: ({ focused }) => {
+              return (
+
+                <Text style={[styles.drawerTxtStyle, { color: focused ? '#23d3d3' : '#FFFFFF' }]}>Office Expenses</Text>
+
+              )
+            },
+            headerTitle: () => {
+              return (
+                <Text style={{ color: '#FFFFFF', fontSize: 15, fontFamily: 'inter-medium' }}>Office Expenses</Text>
+              )
+            }
+
+          }} />
+        :
+        <></>
+      }
+
+    </MyDrawer.Navigator>
   )
 }
 
@@ -455,22 +489,22 @@ const AfterLogin = (props1) => {
   }, [props1.navigation]);
 
   return (
-    <Drawer.Navigator
+    <MyDrawer.Navigator
       drawerContent={(props) => {
         return (
           <Layout style={{ flex: 1, paddingTop: Platform.OS == 'android' ? Constants.statusBarHeight : 0 }}>
             <View style={{ alignItems: 'center', paddingVertical: 40 }}>
               <Image style={{ height: 50, width: 200 }} source={require('./assets/senfeng/senfengLogo.png')} resizeMode='contain'></Image>
-              <TouchableOpacity onPress={() => {
+              {/* <TouchableOpacity onPress={() => {
                 Alert.alert('Error', 'Contact your manager to unlock all features')
               }}>
                 <Text style={{ color: 'yellow' }}>Unlock features</Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
 
             <View style={{ marginBottom: 20, marginHorizontal: 20, padding: 15, borderRadius: 15, backgroundColor: '#1a4663', }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', }}>
-                <Image style={{ height: 50, width: 50, borderRadius: 25 }} source={require('./assets/profile_icon.png')} tintColor={'#FFFFFF'}></Image>
+                <Image style={{ height: 50, width: 50, borderRadius: 25 }} source={authState.value.data.dp ? { uri: authState.value.data.dp } : require('./assets/profile_icon.png')} tintColor={authState.value.data.dp ? null : '#FFFFFF'}></Image>
                 <View style={{ marginLeft: 15, flex: 1 }}>
                   {authState.value.data.length != 0
                     ?
@@ -506,13 +540,13 @@ const AfterLogin = (props1) => {
                         // Sign-out successful.
                         props.navigation.navigate('login')
                       }).catch((error) => {
-                        console.log('error')
+                        //console.log('error')
                       });
                     }
                   }
                 ])
               }}>
-                <Image style={{ width: 40, height: 40, transform: [{ rotate: '180deg' }] }} source={require('./assets/logout_icon.png')} tintColor='white'></Image>
+                <Image style={{ width: 30, height: 30, transform: [{ rotate: '180deg' }] }} source={require('./assets/logout_icon.png')} tintColor='white'></Image>
               </TouchableOpacity>
 
             </View>
@@ -531,7 +565,7 @@ const AfterLogin = (props1) => {
         headerTintColor: '#FFFFFF',
         drawerActiveTintColor: '#000000',
       }} >
-      <Drawer.Screen name="dashboard" component={DashboardScreen}
+      <MyDrawer.Screen name="dashboard" component={DashboardScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
@@ -550,7 +584,7 @@ const AfterLogin = (props1) => {
           }
         }} />
 
-      <Drawer.Screen name="attendance" component={AttendanceScreen}
+      <MyDrawer.Screen name="attendance" component={AttendanceScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
@@ -569,7 +603,7 @@ const AfterLogin = (props1) => {
           }
         }} />
 
-      <Drawer.Screen name="assigntask" component={AssignTaskScreen}
+      <MyDrawer.Screen name="assigntask" component={AssignTaskScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
@@ -591,7 +625,7 @@ const AfterLogin = (props1) => {
 
         }} />
 
-      <Drawer.Screen name="mapview" component={MapViewScreen}
+      <MyDrawer.Screen name="mapview" component={MapViewScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
@@ -610,7 +644,7 @@ const AfterLogin = (props1) => {
           }
         }} />
 
-      <Drawer.Screen name="people" component={PropleScreen}
+      <MyDrawer.Screen name="people" component={PropleScreen}
         options={{
           drawerIcon: ({ focused }) => {
             return (
@@ -636,7 +670,7 @@ const AfterLogin = (props1) => {
           }
         }} />
 
-    </Drawer.Navigator>
+    </MyDrawer.Navigator>
   )
 }
 
@@ -650,38 +684,38 @@ export default function App() {
   const navRef = useRef()
   const db = getFirestore(app)
 
-  
- useEffect(()=>{
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowAlert: true,
-      shouldPlaySound: false,
-      shouldSetBadge: true,
-    }),
-  });
- },[])
+
+  useEffect(() => {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowAlert: true,
+        shouldPlaySound: false,
+        shouldSetBadge: true,
+      }),
+    });
+  }, [])
 
   useEffect(() => {
 
     notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
       setNotification(notification);
-      console.log(notification)
+      //console.log(notification)
     });
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener(async response => {
-  
-     const docSnap =  await getDoc(doc(db, 'Tasks',response.notification.request.content.data.id))
-     if(docSnap.exists()){
-      const item = {...docSnap.data(), 'id' : docSnap.id}
-      if(response.notification.request.content.data.designation == 'Engineer' || response.notification.request.content.data.designation == 'Sales'){
-        navRef.current.navigate('taskdetailemployee', { data: item })
+
+      const docSnap = await getDoc(doc(db, 'Tasks', response.notification.request.content.data.id))
+      if (docSnap.exists()) {
+        const item = { ...docSnap.data(), 'id': docSnap.id }
+        if (response.notification.request.content.data.designation == 'Engineer' || response.notification.request.content.data.designation == 'Sales') {
+          navRef.current.navigate('taskdetailemployee', { data: item })
+        }
+        else {
+          navRef.current.navigate('taskdetail', { data: item })
+        }
+
       }
-      else {
-        navRef.current.navigate('taskdetail', { data: item })
-      }
-     
-     }
-      
+
     });
 
     return () => {
@@ -703,12 +737,13 @@ export default function App() {
   useEffect(() => {
 
     async function requestLocationPermission() {
+
       await Font.loadAsync(customFonts);
 
       const location = await Location.requestForegroundPermissionsAsync()
       if (location.status == 'granted') {
         const backgroundStatus = await Location.getBackgroundPermissionsAsync()
-        if(backgroundStatus.status != 'granted'){
+        if (backgroundStatus.status != 'granted') {
           Alert.alert('Location permission', 'Click open and select Allow all the time', [
             {
               text: 'Open',
@@ -732,7 +767,7 @@ export default function App() {
         else {
           setPermission(true)
         }
-      
+
       }
       else {
         Alert.alert("Error", "Go to settings and select Allow all the time")
@@ -754,38 +789,40 @@ export default function App() {
     <>
       <RootSiblingParent>
         <ApplicationProvider {...eva} theme={{ ...eva.dark, ...theme }}>
-          <TokenContextProvider>
-          <LocationContextProvider>
-            <PeopleContextProvider>
-              <AuthContextProvider>
-                <TaskContextProvider>
-                  <GestureHandlerRootView style={{ flex: 1 }}>
-                    <NavigationContainer 
-                    ref={navRef}>
-                      <AppStack.Navigator initialRouteName='checklogin' screenOptions={{ headerShown: false, gestureEnabled: false }}>
-                        <AppStack.Screen name='afterlogin' component={AfterLogin} />
-                        <AppStack.Screen name='afterloginemployee' component={AfterLoginEmployee} />
-                        <AppStack.Screen name='afterloginmanager' component={AfterLoginManager} />
-                        <AppStack.Screen name='login' component={LoginScreen} />
-                        <AppStack.Screen name='signup' component={SignupScreen} />
-                        <AppStack.Screen name='forgetpassword' component={ForgetPasswordScreen} />
-                        <AppStack.Screen name='dashboard' component={DashboardScreen} />
-                        <AppStack.Screen name='dashboardmanager' component={DashboardManagerScreen} />
-                        <AppStack.Screen name='dashboardemployee' component={DashboardEmployeeScreen} />
-                        <AppStack.Screen name='profile' component={ProfileScreen} />
-                        <AppStack.Screen name='checklogin' component={CheckLogin} />
-                        <AppStack.Screen name='taskdetail' component={TaskDetailScreen} />
-                        <AppStack.Screen name='attendancerecord' component={AttendanceRecordScreen} />
-                        <AppStack.Screen name='taskdetailemployee' component={TaskDetailEmployeeScreen} />
-                        <AppStack.Screen name='singleattendancerecord' component={SingleAttendanceRecordScreen} />
-                      </AppStack.Navigator>
-                    </NavigationContainer>
-                  </GestureHandlerRootView>
-                </TaskContextProvider>
-              </AuthContextProvider>
-            </PeopleContextProvider>
-          </LocationContextProvider>
-          </TokenContextProvider>
+          <PaperProvider>
+            <TokenContextProvider>
+              <LocationContextProvider>
+                <PeopleContextProvider>
+                  <AuthContextProvider>
+                    <TaskContextProvider>
+                      <GestureHandlerRootView style={{ flex: 1 }}>
+                        <NavigationContainer
+                          ref={navRef}>
+                          <AppStack.Navigator initialRouteName='checklogin' screenOptions={{ headerShown: false, gestureEnabled: false }}>
+                            <AppStack.Screen name='afterlogin' component={AfterLogin} />
+                            <AppStack.Screen name='afterloginemployee' component={AfterLoginEmployee} />
+                            <AppStack.Screen name='afterloginmanager' component={AfterLoginManager} />
+                            <AppStack.Screen name='login' component={LoginScreen} />
+                            <AppStack.Screen name='signup' component={SignupScreen} />
+                            <AppStack.Screen name='forgetpassword' component={ForgetPasswordScreen} />
+                            <AppStack.Screen name='dashboard' component={DashboardScreen} />
+                            <AppStack.Screen name='dashboardmanager' component={DashboardManagerScreen} />
+                            <AppStack.Screen name='dashboardemployee' component={DashboardEmployeeScreen} />
+                            <AppStack.Screen name='profile' component={ProfileScreen} />
+                            <AppStack.Screen name='checklogin' component={CheckLogin} />
+                            <AppStack.Screen name='taskdetail' component={TaskDetailScreen} />
+                            <AppStack.Screen name='attendancerecord' component={AttendanceRecordScreen} />
+                            <AppStack.Screen name='taskdetailemployee' component={TaskDetailEmployeeScreen} />
+                            <AppStack.Screen name='singleattendancerecord' component={SingleAttendanceRecordScreen} />
+                          </AppStack.Navigator>
+                        </NavigationContainer>
+                      </GestureHandlerRootView>
+                    </TaskContextProvider>
+                  </AuthContextProvider>
+                </PeopleContextProvider>
+              </LocationContextProvider>
+            </TokenContextProvider>
+          </PaperProvider>
         </ApplicationProvider>
       </RootSiblingParent>
       <StatusBar style='light' />

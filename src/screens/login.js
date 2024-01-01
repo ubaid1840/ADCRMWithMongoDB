@@ -1,12 +1,12 @@
 import { StatusBar } from "expo-status-bar";
 import { useState, useEffect, useRef, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, LayoutAnimation } from 'react-native';
+import { View, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { createUserWithEmailAndPassword, getAuth, signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, getFirestore, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import styles from "../styles/styles";
 import app from "../config/firebase";
 import { Alert } from "react-native";
-import { Layout, Text, Input, Button, } from '@ui-kitten/components'
+import { Layout, Text, Input, Button, useTheme } from '@ui-kitten/components'
 import { PeopleContext } from "../store/context/PeopleContext";
 import axios from "axios";
 import { registerForPushNotificationsAsync } from "../function/tokenFunction";
@@ -24,6 +24,7 @@ const LoginScreen = (props) => {
   const { state: peopleState, setPeople } = useContext(PeopleContext)
 
   const auth = getAuth(app)
+  const theme = useTheme()
 
   useEffect(() => {
 
@@ -64,7 +65,6 @@ const LoginScreen = (props) => {
   const handleLogin = async () => {
 
     const db = getFirestore(app)
-
     signInWithEmailAndPassword(auth, email, password)
       .then(async (userCredential) => {
         const user = userCredential.user;
@@ -89,10 +89,16 @@ const LoginScreen = (props) => {
 
           if (whereTo.length != 0) {
             if (whereTo[0].designation == 'Owner') {
-              setEmail("")
-              setPassword("")
               setLoading(false)
-              props.navigation.replace('afterlogin')
+              Alert.alert('Error', 'Mobile app is not for Company owners')
+              const auth = getAuth(app)
+              signOut(auth).then(() => {
+               
+                setPeople([])
+              }).catch((error) => {
+                console.log('error')
+              });
+             
             }
             else if (whereTo[0].designation == 'Manager') {
               setEmail("")
@@ -106,6 +112,17 @@ const LoginScreen = (props) => {
               setLoading(false)
               props.navigation.replace('afterloginemployee')
             }
+          }
+          else {
+            Alert.alert('Error', 'Please contact your manager')
+            const auth = getAuth(app)
+            signOut(auth).then(() => {
+              console.log('logout')
+              setPeople([])
+            }).catch((error) => {
+              console.log('error')
+            });
+            setLoading(false)
           }
         } catch (error) {
           Alert.alert('Error', error)
@@ -134,7 +151,6 @@ const LoginScreen = (props) => {
     <>
 
       <Layout style={[styles.container]}>
-
         <View style={styles.oval1}></View>
         <View style={styles.oval2}></View>
         <View style={{ width: '100%', maxWidth: 350, alignItems: 'center' }}>
@@ -143,14 +159,14 @@ const LoginScreen = (props) => {
           <View style={styles.inputContainer}>
             <View style={{ alignItems: 'center', justifyContent: 'center', width: '100%' }}>
 
-
               <Input
                 style={[{ width: '100%', }]}
                 size="large"
-                placeholderTextColor="#868383DC"
+
                 label="Enter Email"
                 value={email}
                 onChangeText={setEmail}
+                accessoryLeft={() => <Image style={{ height: 20, width: 20 }} source={require('../../assets/email_icon.png')} tintColor={theme['color-basic-500']}></Image>}
               />
               {!isEmailValid ? <Text status='danger' style={{ fontFamily: 'inter-regular', fontSize: 10, marginTop: 5, width: '100%' }}>Enter valid email</Text> : null}
 
@@ -161,6 +177,7 @@ const LoginScreen = (props) => {
                 label="Enter Password"
                 value={password}
                 onChangeText={setPassword}
+                accessoryLeft={() => <Image style={{ height: 20, width: 20 }} source={require('../../assets/password_icon.png')} tintColor={theme['color-basic-500']}></Image>}
                 secureTextEntry
 
               />

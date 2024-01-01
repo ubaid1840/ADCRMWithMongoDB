@@ -1,11 +1,11 @@
 import { ActivityIndicator, ScrollView } from "react-native"
-import { View, SafeAreaView } from "react-native"
-import { ApplicationProvider, Layout, Text } from '@ui-kitten/components';
+import { View, SafeAreaView, Image } from "react-native"
+import { ApplicationProvider, Layout, Text, useTheme } from '@ui-kitten/components';
 import { useCallback, useContext, useEffect, useState } from "react";
 import { AuthContext } from "../store/context/AuthContext";
 import { PeopleContext } from "../store/context/PeopleContext";
 import { useFocusEffect } from "@react-navigation/native";
-import { collection, getDocs, getFirestore } from "firebase/firestore";
+import { collection, getDocs, getFirestore, or, query, where } from "firebase/firestore";
 import styles from "../styles/styles";
 import app from "../config/firebase";
 import axios from "axios";
@@ -15,6 +15,7 @@ const DashboardManagerScreen = (props) => {
 
     const db = getFirestore(app)
 
+    const theme = useTheme()
     const { state: authState, setAuth } = useContext(AuthContext)
     const { state: peopleState } = useContext(PeopleContext)
 
@@ -39,19 +40,19 @@ const DashboardManagerScreen = (props) => {
         let list = []
 
         try {
-            await getDocs(collection(db, 'Tasks'))
-            .then((snapshot)=>{
-                let list = []
-                snapshot.forEach((docs)=>{
-                    list.push(docs.data())
+            await getDocs(query(collection(db, 'Tasks'), or(where('assignedTo', '==', authState.value.data.email), where('assignedBy', '==', authState.value.data.email))))
+                .then((snapshot) => {
+                    let list = []
+                    snapshot.forEach((docs) => {
+                        list.push(docs.data())
+                    })
+                    setOpenTask([...list.filter(item => item.status != 'Completed')])
+                    setClosedTask([...list.filter(item => item.status == 'Completed')])
+                    setTaskArray(list)
+                    setLoading(false)
                 })
-                setOpenTask([...list.filter(item => item.status != 'Completed')])
-                setClosedTask([...list.filter(item => item.status == 'Completed')])
-                setTaskArray(list)
-                setLoading(false)
-            })
         } catch (error) {
-            console.log(error)
+            //console.log(error)
             setTaskArray([])
             setLoading(false)
         }
@@ -71,10 +72,31 @@ const DashboardManagerScreen = (props) => {
         <Layout style={{ flex: 1, }}>
             <ScrollView style={{ flex: 1, }}
                 contentContainerStyle={{ alignItems: 'center', justifyContent: 'center', height: '100%' }}>
-                <Text style={{ fontSize: 50, }}>{openTask.length}</Text>
-                <Text style={{ fontSize: 14 }}>Tasks open</Text>
-                <Text style={{ fontSize: 50, marginTop: 40 }}>{closedTask.length}</Text>
-                <Text style={{ fontSize: 14 }}>Tasks closed</Text>
+
+                <Layout style={[{ borderRadius: 5, width: 220, height: 100 }, { backgroundColor: theme['color-info-700'], justifyContent: 'center', padding: 20, marginHorizontal: 5 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{}}>
+                            <Image style={{ height: 35, width: 35 }} resizeMode='contain' source={require('../../assets/outofstock_icon.png')} tintColor={"white"}></Image>
+                        </View>
+                        <View style={{ marginLeft: 20 }}>
+                            <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>Team Open Task</Text>
+                            <Text style={{ fontFamily: 'inter-regular', fontSize: 20, }}>{openTask.length}</Text>
+                        </View>
+                    </View>
+                </Layout>
+
+                <Layout style={[{ borderRadius: 5, width: 220, height: 100, marginTop:30 }, { backgroundColor: theme['color-danger-700'], justifyContent: 'center', padding: 20, marginHorizontal: 5 }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={{}}>
+                            <Image style={{ height: 35, width: 35 }} resizeMode='contain' source={require('../../assets/outofstock_icon.png')} tintColor={"white"}></Image>
+                        </View>
+                        <View style={{ marginLeft: 20 }}>
+                            <Text style={{ fontFamily: 'inter-regular', fontSize: 14 }}>My Open Task</Text>
+                            <Text style={{ fontFamily: 'inter-regular', fontSize: 20, }}>{openTask.length}</Text>
+                        </View>
+                    </View>
+                </Layout>
+
             </ScrollView>
 
             {loading ? CustomActivityIndicator() : null}

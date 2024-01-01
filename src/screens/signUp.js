@@ -1,15 +1,17 @@
 import { StatusBar } from "expo-status-bar";
 import { useState, useEffect, useRef, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, ActivityIndicator, LayoutAnimation } from 'react-native';
+import { View, TextInput, TouchableOpacity, ActivityIndicator, Image } from 'react-native';
 import { createUserWithEmailAndPassword, getAuth } from 'firebase/auth';
 import { collection, doc, getDoc, getDocs, getFirestore, orderBy, query, setDoc, updateDoc } from 'firebase/firestore';
 import styles from "../styles/styles";
 import app from "../config/firebase";
 import { Alert } from "react-native";
-import { Layout, Text, Input, Button, } from '@ui-kitten/components'
+import { Layout, Text, Input, Button, useTheme } from '@ui-kitten/components'
 import axios from "axios";
 
 const SignupScreen = (props) => {
+
+    const theme = useTheme()
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -137,6 +139,7 @@ const SignupScreen = (props) => {
                                 label="Enter Email"
                                 value={email}
                                 onChangeText={setEmail}
+                                accessoryLeft={()=> <Image style={{height:20, width:20}} source={require('../../assets/email_icon.png')} tintColor={theme['color-basic-500']}></Image>}
                             />
                             {!isEmailValid ? <Text status='danger' style={{ fontFamily: 'inter-regular', fontSize: 10, marginTop: 5, width: '100%' }}>Enter valid email</Text> : null}
 
@@ -148,6 +151,7 @@ const SignupScreen = (props) => {
                                 value={password}
                                 onChangeText={setPassword}
                                 secureTextEntry
+                                accessoryLeft={()=> <Image style={{height:20, width:20}} source={require('../../assets/password_icon.png')} tintColor={theme['color-basic-500']}></Image>}
 
                             />
                             {!isPasswordValid ? <Text status='danger' style={{ fontFamily: 'inter-regular', fontSize: 10, marginTop: 5, width: '100%' }}>Password length should be more than 8 characters</Text> : null}

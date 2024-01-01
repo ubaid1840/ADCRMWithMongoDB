@@ -2,6 +2,11 @@ import { Dimensions, StyleSheet } from "react-native";
 
 
 const styles = StyleSheet.create({
+    layoutCardStyle: {
+        width: 220,
+        height: 150,
+        borderRadius: 10
+      },
     container: {
         flex: 1,
         // backgroundColor: '#000000E3',

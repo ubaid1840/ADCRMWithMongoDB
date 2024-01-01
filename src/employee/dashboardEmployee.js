@@ -1,55 +1,42 @@
 import { ActivityIndicator, ScrollView } from "react-native"
-import { View, SafeAreaView } from "react-native"
-import { ApplicationProvider, Layout, Text } from '@ui-kitten/components';
-import { useCallback, useContext, useEffect, useState } from "react";
+import { View } from "react-native"
+import { Layout, Text } from '@ui-kitten/components';
+import { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../store/context/AuthContext";
-import { PeopleContext } from "../store/context/PeopleContext";
-import { useFocusEffect } from "@react-navigation/native";
 import { collection, getDocs, getFirestore, orderBy, query, where } from "firebase/firestore";
 import styles from "../styles/styles";
 import app from "../config/firebase";
 import moment from "moment";
 import { TaskContext } from "../store/context/TaskContext";
-import axios from "axios";
 
 
 const DashboardEmployeeScreen = (props) => {
 
     const db = getFirestore(app)
-
     const { state: authState, setAuth } = useContext(AuthContext)
-    const { state: peopleState } = useContext(PeopleContext)
     const { state: taskState, setTaskList } = useContext(TaskContext)
 
     const [loading, setLoading] = useState(true)
     const [openTask, setOpenTask] = useState([])
     const [closedTask, setClosedTask] = useState([])
 
-    const [isFocusedFirstTime, setIsFocusedFirstTime] = useState(true);
-
     useEffect(() => {
         const unsubscribe = props.navigation.addListener('focus', () => {
             setLoading(true)
             fetchData()
         });
-
-        // Return the function to unsubscribe from the event so it gets removed on unmount
         return unsubscribe;
     }, [props.navigation])
-
-
-
 
     const fetchData = async () => {
 
         let list = []
-
         await getDocs(collection(db, 'Tasks'))
-        .then((snapshot)=>{
-            snapshot.forEach((docs)=>{
-                list.push(docs.data())
+            .then((snapshot) => {
+                snapshot.forEach((docs) => {
+                    list.push(docs.data())
+                })
             })
-        })
         list.sort((a, b) => b.TimeStamp - a.TimeStamp)
         const list1 = [...list.filter(item => item.assignedTo === authState.value.data.email)]
         const updatedList = list1.filter((item) => {
@@ -64,9 +51,6 @@ const DashboardEmployeeScreen = (props) => {
         setClosedTask([...list1.filter(item => item.status == 'Completed')])
         setLoading(false)
     }
-
-
-
 
     const CustomActivityIndicator = () => {
         return (
